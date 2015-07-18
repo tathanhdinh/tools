@@ -57,11 +57,11 @@ exception ControlPointIndex of int
 class exp_policy_c = object(self)
 
   method concsymb_store (tr_index:int) (addr_occ:int) (e_addr:dbaExpr) (e:dbaExpr) (size:int) (nth_dba:int) (inst:trace_inst): concsymb_action * concsymb_action =
-    if (Int64.compare (Int64.of_int 0x8048619) inst.location = 0)
-    then (KeepOrSymb(false), Conc)
-    else (KeepOrSymb(false), KeepOrSymb(false))
+    (* if (Int64.compare (Int64.of_int 0x8048619) inst.location = 0) *)
+    (* then (KeepOrSymb(false), Conc) *)
+    (* else (KeepOrSymb(false), KeepOrSymb(false)) *)
 
-    (* (KeepOrSymb(false), KeepOrSymb(false)) *)
+    (KeepOrSymb(false), KeepOrSymb(false))
 
 
   method concsymb_load (tr_index:int) (add_occ:int) (e:dbaExpr) (size:int) (nth_dba:int) (inst:trace_inst) =
@@ -101,40 +101,40 @@ let construct_memory_state_from_file base_address state_entries_filename initial
 
 (* ============================================================================= *)
 
-let find_not_visited_continuation_index control_point =
-  try
-    let idx = ref 0 in
-    DynArray.iter (fun continuation ->
-        if (Int64.to_int continuation.next_location = 0) then raise (NotVisitedContinuationIndex !idx)
-        else idx := !idx + 1) control_point.continuations;
-    None
-  with
-  | NotVisitedContinuationIndex i -> Some i
+(* let find_not_visited_continuation_index control_point = *)
+(*   try *)
+(*     let idx = ref 0 in *)
+(*     DynArray.iter (fun continuation -> *)
+(*         if (Int64.to_int continuation.next_location = 0) then raise (NotVisitedContinuationIndex !idx) *)
+(*         else idx := !idx + 1) control_point.continuations; *)
+(*     None *)
+(*   with *)
+(*   | NotVisitedContinuationIndex i -> Some i *)
 
 (* ============================================================================= *)
 
-let find_last_visited_continuation_index control_point =
-  try
-    let idx = ref 0 in
-    DynArray.iter (fun continuation ->
-        if (Int64.to_int continuation.next_location <> 0)
-        then idx := !idx + 1
-        else raise (NotVisitedContinuationIndex !idx)) control_point.continuations;
-      Some (!idx - 1)
-  with
-  | NotVisitedContinuationIndex i -> Some i
+(* let find_last_visited_continuation_index control_point = *)
+(*   try *)
+(*     let idx = ref 0 in *)
+(*     DynArray.iter (fun continuation -> *)
+(*         if (Int64.to_int continuation.next_location <> 0) *)
+(*         then idx := !idx + 1 *)
+(*         else raise (NotVisitedContinuationIndex !idx)) control_point.continuations; *)
+(*       Some (!idx - 1) *)
+(*   with *)
+(*   | NotVisitedContinuationIndex i -> Some i *)
 
 (* ============================================================================= *)
 
-let find_visiting_continuation_index control_point =
-  try
-    let idx = ref 0 in
-    DynArray.iter (fun continuation ->
-      if (Int64.to_int continuation.next_location <> 0) then idx := !idx + 1
-      else raise (NotVisitedContinuationIndex !idx)) control_point.continuations;
-    Some (!idx - 1)
-  with
-  | NotVisitedContinuationIndex i -> if (i = 0) then Some i else Some (i - 1)
+(* let find_visiting_continuation_index control_point = *)
+(*   try *)
+(*     let idx = ref 0 in *)
+(*     DynArray.iter (fun continuation -> *)
+(*       if (Int64.to_int continuation.next_location <> 0) then idx := !idx + 1 *)
+(*       else raise (NotVisitedContinuationIndex !idx)) control_point.continuations; *)
+(*     Some (!idx - 1) *)
+(*   with *)
+(*   | NotVisitedContinuationIndex i -> if (i = 0) then Some i else Some (i - 1) *)
 
 (* ============================================================================= *)
 
@@ -190,11 +190,9 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
     in
     let idx = ref 0 in
     try
-      DynArray.iter (fun cpoint ->
-          if is_the_same_history cpoint.history
-          then raise (ControlPointIndex !idx)
-          else idx := !idx + 1)
-        visited_control_points;
+      DynArray.iter (
+        fun cpoint -> if is_the_same_history cpoint.history then raise (ControlPointIndex !idx) else idx := !idx + 1
+      ) visited_control_points;
       None
     with
     | ControlPointIndex i -> Some i
@@ -240,11 +238,7 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
           | UNSAT -> []
         )
       with
-      | _ ->
-        (
-          Printf.printf "parsing smt formula error.\n"; flush stdout;
-          assert false
-        )
+      | _ -> failwith "parsing smt formula error.\n"
     )
 
   (* ============================================================================= *)
@@ -259,7 +253,7 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
 
   (* ============================================================================= *)
 
-  method private add_new_control_point_for_conditional_jump inst dbainst (env:analysis_env) =
+  method private add_new_control_point_for_conditional_jump (inst:trace_inst) (dbainst:dbainstr) (env:analysis_env) =
     match snd dbainst with
     | DbaIkIf (cond, NonLocal((address, _), _), offset) ->
       (
@@ -270,15 +264,26 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
           then self#calculate_conditional_jump_new_continuations cond address inst env
           else []
         in
+        let expl_status = if List.length other_continuations = 0 then Uncoverable else PartiallyCovered in
         let new_cpoint =
           {
             location      = inst.location;
             history       = DynArray.to_list accumulated_ins_locs;
             continuations = DynArray.of_list (current_continuation::other_continuations);
-            explored      = if List.length other_continuations = 0 then Uncoverable else PartiallyCovered;
+            explored      = expl_status;
             control_type  = ConJump
           }
-        in DynArray.add visited_control_points new_cpoint
+        in
+        (
+          let status_str =
+            match expl_status with
+            | Uncoverable -> "UNCOVERABLE";
+            | PartiallyCovered -> "PARTIALLY COVERED"
+          in Printf.printf "add new conditional jump at 0x%x with history %d, status %s\n" (Int64.to_int new_cpoint.location) (List.length new_cpoint.history) status_str;
+          flush stdout;
+
+          DynArray.add visited_control_points new_cpoint
+        )
       )
     | _ -> ()
 
@@ -366,7 +371,13 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
             explored      = Visited;
             control_type  = DynJump
           }
-        in DynArray.add visited_control_points new_cpoint
+        in
+        (
+          Printf.printf "add new dynamic jump at 0x%x with history %d\n" (Int64.to_int new_cpoint.location) (List.length new_cpoint.history);
+          flush stdout;
+
+          DynArray.add visited_control_points new_cpoint
+        )
       )
     | _ -> ()
 
@@ -385,8 +396,7 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
             fun cont ->
               let input_pairs = List.combine cont.input_value current_inputs in
               if not (List.exists (fun elem -> fst elem <> snd elem) input_pairs) then
-                if Int64.to_int cont.next_location = 0
-                then
+                if Int64.to_int cont.next_location = 0 then
                   let next_inst_address = Big_int.int64_of_big_int (fst (get_next_address inst.concrete_infos addr_size)) in
                   { next_location = next_inst_address; input_value = current_inputs }
                 else cont
@@ -398,7 +408,16 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
           then Covered else PartiallyCovered
         in
         let new_cpoint = { current_cpoint with continuations = new_continuations; explored = explored_status }
-        in DynArray.set visited_control_points idx new_cpoint
+        in
+        (
+          let status_str =
+            match new_cpoint.explored with
+            | Covered -> "COMPLETELY COVERED"
+            | PartiallyCovered -> "PARTIALLY COVERED"
+          in Printf.printf "control point at 0x%x with history %d is %s\n" (Int64.to_int new_cpoint.location) (List.length new_cpoint.history) status_str;
+
+          DynArray.set visited_control_points idx new_cpoint
+        )
       )
 
   (* ============================================================================= *)
@@ -418,7 +437,15 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
           else { current_cpoint
                  with continuations = all_continuations; explored = PartiallyCovered }
         in
-        DynArray.set visited_control_points idx new_cpoint
+        (
+          let status_str =
+            match new_cpoint.explored with
+            | Uncoverable -> "UNCOVERABLE"
+            | PartiallyCovered -> "PARTIALLY COVERED"
+          in Printf.printf "dynamic jump at 0x%x with history %d is %s\n" (Int64.to_int new_cpoint.location) (List.length new_cpoint.history) status_str;
+
+          DynArray.set visited_control_points idx new_cpoint
+        )
       )
     | _ -> ()
 
@@ -457,7 +484,6 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
           | None -> ()
           | Some idx ->
             (
-              (* Printf.printf "blahblah\n"; flush stdout; *)
               self#setup_continuations_of_dynamic_jump_at_index idx expr inst dbainst env
             )
         )
