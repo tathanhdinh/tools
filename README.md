@@ -15,6 +15,7 @@ The tool is written mostly in C++ and OCaml, and uses the following great softwa
 * [BinSec](http://binsec.gforge.inria.fr/)<sup>3</sup>
 * [Pin](https://software.intel.com/en-us/articles/pin-a-dynamic-binary-instrumentation-tool)
 * [Boost](http://www.boost.org/)
+* [Z3](https://github.com/Z3Prover/z3)
 * [tinyformat](https://github.com/c42f/tinyformat)
 * [Protocol Buffers](https://github.com/google/protobuf)
 * [ELFIO - ELF](https://github.com/serge1/ELFIO)
