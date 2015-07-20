@@ -165,9 +165,34 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
   method set_current_inputs inputs = current_inputs <- inputs
   method get_current_inputs = current_inputs
 
-  (* ================================== visiting methods ================================== *)
+  val mutable control_point_checking_flag = false
+  val mutable stop_cmd_count = 0
+
+  method private change_control_point_checking_flag (inst:trace_inst) =
+    if (Int64.to_int inst.location = 0x8048838)
+    then
+      (
+        control_point_checking_flag <- true;
+        stop_cmd_count <- 0
+      )
+    else
+      (
+        if (Int64.to_int inst.location = 0x804888d)
+        then stop_cmd_count <- stop_cmd_count + 1 else ();
+
+        if (stop_cmd_count = 2)
+        then
+          (
+            control_point_checking_flag <- false;
+            stop_cmd_count <- 0;
+          )
+        else ()
+      )
+
+    (* else (Int64.to_int inst.location = 0x804888d) then stop_cmd_count <- !stop_cmd_count + 1 *)
 
   method visit_instr_before (key:int) (inst:trace_inst) (env:analysis_env) = (* of type trace_visit_action *)
+    self#change_control_point_checking_flag inst;
     DoExec
 
   (* ============================================================================= *)
@@ -453,42 +478,46 @@ class explorer_c (trace_filename:string) concolic_policy (input_positions:(int *
 
   method visit_dbainstr_before (key:int) (inst:trace_inst) (dbainst:dbainstr) (env:analysis_env) =
     (
-      match snd dbainst with
-      | DbaIkIf (cond, NonLocal((address, _), _), offset) ->
+      if (control_point_checking_flag) then
         (
-          match self#find_index_of_current_instruction_in_visited_control_points inst with
-          | None ->
+          match snd dbainst with
+          | DbaIkIf (cond, NonLocal((address, _), _), offset) ->
             (
-              self#add_new_control_point_for_conditional_jump inst dbainst env
+              match self#find_index_of_current_instruction_in_visited_control_points inst with
+              | None ->
+                (
+                  self#add_new_control_point_for_conditional_jump inst dbainst env
+                )
+              | Some idx ->
+                (
+                  self#update_continuation_of_control_point_at_index idx inst env.addr_size
+                )
             )
-          | Some idx ->
+          | DbaIkDJump _ ->
             (
-              self#update_continuation_of_control_point_at_index idx inst env.addr_size
+              match self#find_index_of_current_instruction_in_visited_control_points inst with
+              | None ->
+                (
+                  self#add_new_control_point_for_dynamic_jump inst dbainst env
+                )
+              | Some idx ->
+                (
+                  self#update_continuation_of_control_point_at_index idx inst env.addr_size
+                )
             )
-        )
-      | DbaIkDJump _ ->
-        (
-          match self#find_index_of_current_instruction_in_visited_control_points inst with
-          | None ->
+          | DbaIkAssign (DbaLhsVar(var, size, tags), expr, offset) ->
             (
-              self#add_new_control_point_for_dynamic_jump inst dbainst env
+              match self#find_index_of_next_instruction_in_visited_control_points inst env.addr_size with
+              | None -> ()
+              | Some idx ->
+                (
+                  self#setup_continuations_of_dynamic_jump_at_index idx expr inst dbainst env
+                )
             )
-          | Some idx ->
-            (
-              self#update_continuation_of_control_point_at_index idx inst env.addr_size
-            )
-        )
-      | DbaIkAssign (DbaLhsVar(var, size, tags), expr, offset) ->
-        (
-          match self#find_index_of_next_instruction_in_visited_control_points inst env.addr_size with
-          | None -> ()
-          | Some idx ->
-            (
-              self#setup_continuations_of_dynamic_jump_at_index idx expr inst dbainst env
-            )
-        )
 
-      | _ -> ()
+          | _ -> ()
+        )
+      else ();
     );
     DoExec
 
@@ -757,7 +786,8 @@ let print_current_exploration_result visited_cpoints =
 (* ============================================================================= *)
 
 let direct_explore_exe (exe_filename:string) (start_addr:int) (stop_addr:int) (input_points:(int * state_indentifier_t) list) (memory_base_addr:int) (memory_dump_file:string) =
-  let visited_cpoints = ref (DynArray.create ())
+  let start_time = Sys.time()
+  and visited_cpoints = ref (DynArray.create ())
   and all_explored    = ref false
   and first_time_exploration = ref true
   and option_filename = generate_option_file exe_filename start_addr stop_addr
@@ -773,7 +803,7 @@ let direct_explore_exe (exe_filename:string) (start_addr:int) (stop_addr:int) (i
         (
           all_explored := true;
 
-          Printf.printf "all control points are covered, stop exploration.\n";
+          Printf.printf "all control points are covered, stop exploration, execution time %f (secs).\n" (Sys.time() -. start_time);
           Printf.printf "===================================================\nexploration results:\n";
           print_exploration_result !visited_cpoints;
           let exploration_result_file = (Filename.basename exe_filename) ^ ".exp" in
