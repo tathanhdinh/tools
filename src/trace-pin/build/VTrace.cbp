@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+   <FileVersion major="1" minor="6" />
+   <Project>
+      <Option title="VTrace" />
+      <Option makefile_is_custom="1" />
+      <Option compiler="gcc" />
+      <Option virtualFolders="CMake Files\;" />
+      <Build>
+      <Target title="all">
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 all" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="edit_cache">
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 edit_cache" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rebuild_cache">
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 rebuild_cache" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="run">
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 run" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="vtrace">
+         <Option output="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/vtrace.pin" prefix_auto="0" extension_auto="0" />
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build" />
+         <Option object_output="./" />
+         <Option type="3" />
+         <Option compiler="gcc" />
+         <Compiler>
+            <Add option="-DTARGET_LINUX" />
+            <Add option="-DBIGARRAY_MULTIPLIER=1" />
+            <Add option="-DUSING_XED" />
+            <Add option="-DTARGET_IA32" />
+            <Add option="-DHOST_IA32" />
+            <Add directory="/home/bigraph/Documents/Binsec/pin-2.14-67254-gcc.4.4.7-linux/extras/components/include" />
+            <Add directory="/home/bigraph/Documents/Binsec/pin-2.14-67254-gcc.4.4.7-linux/extras/xed2-ia32/include" />
+            <Add directory="/home/bigraph/Documents/Binsec/pin-2.14-67254-gcc.4.4.7-linux/source/include/pin" />
+            <Add directory="/home/bigraph/Documents/Binsec/pin-2.14-67254-gcc.4.4.7-linux/source/include/pin/gen" />
+         </Compiler>
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 vtrace" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="vtrace/fast">
+         <Option output="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/vtrace.pin" prefix_auto="0" extension_auto="0" />
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build" />
+         <Option object_output="./" />
+         <Option type="3" />
+         <Option compiler="gcc" />
+         <Compiler>
+            <Add option="-DTARGET_LINUX" />
+            <Add option="-DBIGARRAY_MULTIPLIER=1" />
+            <Add option="-DUSING_XED" />
+            <Add option="-DTARGET_IA32" />
+            <Add option="-DHOST_IA32" />
+            <Add directory="/home/bigraph/Documents/Binsec/pin-2.14-67254-gcc.4.4.7-linux/extras/components/include" />
+            <Add directory="/home/bigraph/Documents/Binsec/pin-2.14-67254-gcc.4.4.7-linux/extras/xed2-ia32/include" />
+            <Add directory="/home/bigraph/Documents/Binsec/pin-2.14-67254-gcc.4.4.7-linux/source/include/pin" />
+            <Add directory="/home/bigraph/Documents/Binsec/pin-2.14-67254-gcc.4.4.7-linux/source/include/pin/gen" />
+         </Compiler>
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 vtrace/fast" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      </Build>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/src/lib/cap/parser.cpp">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/src/lib/cap/tracer.cpp">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/src/lib/type/instruction.cpp">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/src/lib/type/trace.pb.cc">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/src/main.cpp">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/src/lib/type/instruction.h">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/CMakeLists.txt">
+          <Option virtualFolder="CMake Files\" />
+      </Unit>
+   </Project>
+</CodeBlocks_project_file>

@@ -1,0 +1,11 @@
+git pull
+
+cd build
+
+export CC=clang
+export CXX=clang++
+export C_INCLUDE_PATH=$PROTOBUF_SRC_PATH
+export CPLUS_INCLUDE_PATH=$PROTOBUF_SRC_PATH
+
+cmake .. -DPIN_ROOT_DIR=$PIN_ROOT
+make 

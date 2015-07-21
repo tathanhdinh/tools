@@ -1,0 +1,5 @@
+- Ajouter le protoc dans le Makefile (pour générer dynamiquement trace.pb.cc, trace.pb.h)
+
+- Ajouter un argument pour tracer une fonction (eg: -function my_fun), comme alternative à (-start,-stop)
+
+

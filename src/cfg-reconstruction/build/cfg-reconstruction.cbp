@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+   <FileVersion major="1" minor="6" />
+   <Project>
+      <Option title="cfg-reconstruction" />
+      <Option makefile_is_custom="1" />
+      <Option compiler="gcc" />
+      <Option virtualFolders="CMake Files\;" />
+      <Build>
+      <Target title="all">
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 all" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="cfg-reconstruction">
+         <Option output="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/cfg-reconstruction" prefix_auto="0" extension_auto="0" />
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build" />
+         <Option object_output="./" />
+         <Option type="1" />
+         <Option compiler="gcc" />
+         <Compiler>
+            <Add directory="/home/bigraph/.local/bin/../lib/clang/3.8.0/include" />
+            <Add directory="/usr/include" />
+            <Add directory="/usr/lib/gcc/x86_64-redhat-linux/4.9.2/../../../../include/c++/4.9.2" />
+            <Add directory="/usr/lib/gcc/x86_64-redhat-linux/4.9.2/../../../../include/c++/4.9.2/backward" />
+            <Add directory="/usr/lib/gcc/x86_64-redhat-linux/4.9.2/../../../../include/c++/4.9.2/x86_64-redhat-linux" />
+            <Add directory="/usr/local/include" />
+         </Compiler>
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 cfg-reconstruction" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="cfg-reconstruction/fast">
+         <Option output="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/cfg-reconstruction" prefix_auto="0" extension_auto="0" />
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build" />
+         <Option object_output="./" />
+         <Option type="1" />
+         <Option compiler="gcc" />
+         <Compiler>
+            <Add directory="/home/bigraph/.local/bin/../lib/clang/3.8.0/include" />
+            <Add directory="/usr/include" />
+            <Add directory="/usr/lib/gcc/x86_64-redhat-linux/4.9.2/../../../../include/c++/4.9.2" />
+            <Add directory="/usr/lib/gcc/x86_64-redhat-linux/4.9.2/../../../../include/c++/4.9.2/backward" />
+            <Add directory="/usr/lib/gcc/x86_64-redhat-linux/4.9.2/../../../../include/c++/4.9.2/x86_64-redhat-linux" />
+            <Add directory="/usr/local/include" />
+         </Compiler>
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 cfg-reconstruction/fast" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="edit_cache">
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 edit_cache" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      <Target title="rebuild_cache">
+         <Option working_dir="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build" />
+         <Option type="4" />
+         <MakeCommands>
+            <Build command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 rebuild_cache" />
+            <CompileFile command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;" />
+            <Clean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+            <DistClean command="/bin/gmake -f &quot;/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/build/Makefile&quot;  VERBOSE=1 clean" />
+         </MakeCommands>
+      </Target>
+      </Build>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/src/graph/graph.cpp">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/src/loader/trace.pb.cc">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/src/main.cpp">
+      </Unit>
+      <Unit filename="/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/cfg-reconstruction/CMakeLists.txt">
+          <Option virtualFolder="CMake Files\" />
+      </Unit>
+   </Project>
+</CodeBlocks_project_file>
