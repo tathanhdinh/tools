@@ -85,13 +85,14 @@ using concrete_info_t = boost::variant<
   >;
 
 using dyn_ins_t = std::tuple<
-  ADDRINT,        // address of instructions
+  ADDRINT,        // address of instruction
   THREADID,       // id of containing thread
   dyn_regs_t,     // read registers
   dyn_regs_t,     // write registers
   dyn_mems_t,     // read memory addresses
   dyn_mems_t,     // write memory addresses
-  concrete_info_t // concrete information
+  concrete_info_t, // concrete information
+  ADDRINT         // address of next instruction
   >;
 
 // list is prefered since new instructions will be added regularly
@@ -108,7 +109,8 @@ enum
     INS_WRITE_REGS    = 3,
     INS_READ_MEMS     = 4,
     INS_WRITE_MEMS    = 5,
-    INS_CONCRETE_INFO = 6
+    INS_CONCRETE_INFO = 6,
+    INS_NEXT_ADDRESS  = 7
   };
 
 auto normalize_hex_string (const std::string& input) -> std::string;

@@ -8,7 +8,6 @@
 #include <fstream>
 #include <cassert>
 
-//static auto protobuf_trace = trace_format::trace_t();
 static auto protobuf_chunk = trace_format::chunk_t();
 static std::ofstream protobuf_trace_file;
 static auto trace_length = uint32_t{0};
@@ -76,9 +75,6 @@ auto save_in_simple_format (std::ofstream& output_stream) -> void
   std::for_each(trace.begin(), trace.end(), [&output_stream](decltype(trace)::const_reference ins)
   {
     auto ins_addr = std::get<INS_ADDRESS>(ins);
-//    tfm::format(output_stream, "%-16s   %-40s   %-25s   %-80s\n",
-//                StringFromAddrint(ins_addr), inst_at_addr[ins_addr]->disassemble,
-//                inst_at_addr[ins_addr]->including_routine, inst_at_addr[ins_addr]->including_image);
     tfm::format(output_stream, "%-12s %-40s", normalize_hex_string(StringFromAddrint(ins_addr)),
                 cached_ins_at_addr[ins_addr]->disassemble);
 
@@ -225,7 +221,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
 
   auto p_ins_addr = p_instruction->mutable_address();
 
-  static_assert(((sizeof(ADDRINT) == 4) || (sizeof(ADDRINT) == 8)), "address size must be 32 or 64 bit");
+  static_assert(((sizeof(ADDRINT) == 4) || (sizeof(ADDRINT) == 8)), "address size must be 32 or 64");
 
   switch (sizeof(ADDRINT)) {
   case 4:
@@ -477,8 +473,6 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
     auto call_concrete_info = concrete_info->mutable_call();
     call_concrete_info->set_func_name(call_real_info.called_fun_name);
 
-//    tfm::printfln("called function: %s", call_real_info.called_fun_name);
-
     call_concrete_info->set_is_traced(call_real_info.is_traced);
 
     auto func_addr = call_concrete_info->mutable_func_addr();
@@ -520,6 +514,23 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
     if (p_static_ins->is_call) {
       auto call_info = std::get<INS_CONCRETE_INFO>(ins);
       add_call_concrete_info(call_info);
+    }
+
+    // set address of the next instruction
+    auto next_addr_con_info = p_instruction->add_concrete_info();
+    next_addr_con_info->set_typeid_(trace_format::NEXT_ADDRESS);
+    auto next_addr = next_addr_con_info->mutable_next_address();
+
+    switch (sizeof(ADDRINT)) {
+    case 4:
+      next_addr->set_typeid_(trace_format::BIT32);
+      next_addr->set_value_32(std::get<INS_NEXT_ADDRESS>(ins));
+      break;
+
+    case 8:
+      next_addr->set_typeid_(trace_format::BIT64);
+      next_addr->set_value_64(std::get<INS_NEXT_ADDRESS>(ins));
+      break;
     }
   }
 

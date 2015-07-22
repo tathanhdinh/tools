@@ -335,7 +335,7 @@ void protobuf_AssignDesc_trace_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(syscall_t));
   ins_con_info_t_descriptor_ = file->message_type(14);
-  static const int ins_con_info_t_offsets_[9] = {
+  static const int ins_con_info_t_offsets_[10] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ins_con_info_t, typeid__),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ins_con_info_t, read_register_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ins_con_info_t, write_register_),
@@ -344,6 +344,7 @@ void protobuf_AssignDesc_trace_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ins_con_info_t, call_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ins_con_info_t, ret_ret_value_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ins_con_info_t, system_call_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ins_con_info_t, next_address_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ins_con_info_t, reserved_comment_),
   };
   ins_con_info_t_reflection_ =
@@ -571,7 +572,7 @@ void protobuf_AddDesc_trace_2eproto() {
     "ce_format.sys_write_t\0223\n\016generic_sycall\030"
     "\005 \001(\0132\033.trace_format.sys_generic_t\"G\n\tsy"
     "scall_t\022\n\n\002id\030\001 \002(\r\022.\n\004info\030\002 \001(\0132 .trac"
-    "e_format.syscall_sup_info_t\"\233\003\n\016ins_con_"
+    "e_format.syscall_sup_info_t\"\312\003\n\016ins_con_"
     "info_t\022/\n\006typeid\030\001 \002(\0162\037.trace_format.ty"
     "peid_con_info_t\022/\n\rread_register\030\002 \001(\0132\030"
     ".trace_format.register_t\0220\n\016write_regist"
@@ -581,30 +582,32 @@ void protobuf_AddDesc_trace_2eproto() {
     "ory_t\022\"\n\004call\030\006 \001(\0132\024.trace_format.call_"
     "t\022.\n\rret_ret_value\030\007 \001(\0132\027.trace_format."
     "address_t\022,\n\013system_call\030\010 \001(\0132\027.trace_f"
-    "ormat.syscall_t\022\030\n\020reserved_comment\030\n \001("
-    "\014\"\221\001\n\rinstruction_t\022\021\n\tthread_id\030\001 \002(\r\022("
-    "\n\007address\030\002 \002(\0132\027.trace_format.address_t"
-    "\022\016\n\006opcode\030\003 \002(\014\0223\n\rconcrete_info\030\004 \003(\0132"
-    "\034.trace_format.ins_con_info_t\"\223\001\n\006body_t"
-    "\022+\n\006typeid\030\001 \002(\0162\033.trace_format.typeid_b"
-    "ody_t\022*\n\010metadata\030\002 \001(\0132\030.trace_format.m"
-    "etadata_t\0220\n\013instruction\030\003 \001(\0132\033.trace_f"
-    "ormat.instruction_t\"-\n\007chunk_t\022\"\n\004body\030\001"
-    " \003(\0132\024.trace_format.body_t\"U\n\007trace_t\022&\n"
-    "\006header\030\001 \002(\0132\026.trace_format.header_t\022\"\n"
-    "\004body\030\002 \003(\0132\024.trace_format.body_t*%\n\016arc"
-    "hitecture_t\022\007\n\003X86\020\000\022\n\n\006X86_64\020\001*I\n\020type"
-    "id_address_t\022\010\n\004BIT8\020\000\022\t\n\005BIT16\020\001\022\t\n\005BIT"
-    "32\020\002\022\t\n\005BIT64\020\003\022\n\n\006BIT128\020\004*G\n\021typeid_me"
-    "tadata_t\022\022\n\016EXCEPTION_TYPE\020\000\022\017\n\013MODULE_T"
-    "YPE\020\001\022\r\n\tWAVE_TYPE\020\002*^\n\020typeid_syscall_t"
-    "\022\020\n\014OPEN_SYSCALL\020\000\022\020\n\014READ_SYSCALL\020\001\022\021\n\r"
-    "WRITE_SYSCALL\020\002\022\023\n\017GENERIC_SYSCALL\020\003*\212\001\n"
-    "\021typeid_con_info_t\022\013\n\007REGREAD\020\000\022\014\n\010REGWR"
-    "ITE\020\001\022\013\n\007MEMLOAD\020\002\022\014\n\010MEMSTORE\020\003\022\010\n\004CALL"
-    "\020\004\022\007\n\003RET\020\005\022\013\n\007SYSCALL\020\006\022\021\n\rNOT_RETRIEVE"
-    "D\020\007\022\014\n\007COMMENT\020\377\001*.\n\rtypeid_body_t\022\014\n\010ME"
-    "TADATA\020\000\022\017\n\013INSTRUCTION\020\001", 2945);
+    "ormat.syscall_t\022-\n\014next_address\030\t \001(\0132\027."
+    "trace_format.address_t\022\030\n\020reserved_comme"
+    "nt\030\n \001(\014\"\221\001\n\rinstruction_t\022\021\n\tthread_id\030"
+    "\001 \002(\r\022(\n\007address\030\002 \002(\0132\027.trace_format.ad"
+    "dress_t\022\016\n\006opcode\030\003 \002(\014\0223\n\rconcrete_info"
+    "\030\004 \003(\0132\034.trace_format.ins_con_info_t\"\223\001\n"
+    "\006body_t\022+\n\006typeid\030\001 \002(\0162\033.trace_format.t"
+    "ypeid_body_t\022*\n\010metadata\030\002 \001(\0132\030.trace_f"
+    "ormat.metadata_t\0220\n\013instruction\030\003 \001(\0132\033."
+    "trace_format.instruction_t\"-\n\007chunk_t\022\"\n"
+    "\004body\030\001 \003(\0132\024.trace_format.body_t\"U\n\007tra"
+    "ce_t\022&\n\006header\030\001 \002(\0132\026.trace_format.head"
+    "er_t\022\"\n\004body\030\002 \003(\0132\024.trace_format.body_t"
+    "*%\n\016architecture_t\022\007\n\003X86\020\000\022\n\n\006X86_64\020\001*"
+    "I\n\020typeid_address_t\022\010\n\004BIT8\020\000\022\t\n\005BIT16\020\001"
+    "\022\t\n\005BIT32\020\002\022\t\n\005BIT64\020\003\022\n\n\006BIT128\020\004*G\n\021ty"
+    "peid_metadata_t\022\022\n\016EXCEPTION_TYPE\020\000\022\017\n\013M"
+    "ODULE_TYPE\020\001\022\r\n\tWAVE_TYPE\020\002*^\n\020typeid_sy"
+    "scall_t\022\020\n\014OPEN_SYSCALL\020\000\022\020\n\014READ_SYSCAL"
+    "L\020\001\022\021\n\rWRITE_SYSCALL\020\002\022\023\n\017GENERIC_SYSCAL"
+    "L\020\003*\234\001\n\021typeid_con_info_t\022\013\n\007REGREAD\020\000\022\014"
+    "\n\010REGWRITE\020\001\022\013\n\007MEMLOAD\020\002\022\014\n\010MEMSTORE\020\003\022"
+    "\010\n\004CALL\020\004\022\007\n\003RET\020\005\022\013\n\007SYSCALL\020\006\022\021\n\rNOT_R"
+    "ETRIEVED\020\007\022\020\n\014NEXT_ADDRESS\020\010\022\014\n\007COMMENT\020"
+    "\377\001*.\n\rtypeid_body_t\022\014\n\010METADATA\020\000\022\017\n\013INS"
+    "TRUCTION\020\001", 3010);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "trace.proto", &protobuf_RegisterTypes);
   address_t::default_instance_ = new address_t();
@@ -730,6 +733,7 @@ bool typeid_con_info_t_IsValid(int value) {
     case 5:
     case 6:
     case 7:
+    case 8:
     case 255:
       return true;
     default:
@@ -5464,6 +5468,7 @@ const int ins_con_info_t::kStoreMemoryFieldNumber;
 const int ins_con_info_t::kCallFieldNumber;
 const int ins_con_info_t::kRetRetValueFieldNumber;
 const int ins_con_info_t::kSystemCallFieldNumber;
+const int ins_con_info_t::kNextAddressFieldNumber;
 const int ins_con_info_t::kReservedCommentFieldNumber;
 #endif  // !_MSC_VER
 
@@ -5481,6 +5486,7 @@ void ins_con_info_t::InitAsDefaultInstance() {
   call_ = const_cast< ::trace_format::call_t*>(&::trace_format::call_t::default_instance());
   ret_ret_value_ = const_cast< ::trace_format::address_t*>(&::trace_format::address_t::default_instance());
   system_call_ = const_cast< ::trace_format::syscall_t*>(&::trace_format::syscall_t::default_instance());
+  next_address_ = const_cast< ::trace_format::address_t*>(&::trace_format::address_t::default_instance());
 }
 
 ins_con_info_t::ins_con_info_t(const ins_con_info_t& from)
@@ -5501,6 +5507,7 @@ void ins_con_info_t::SharedCtor() {
   call_ = NULL;
   ret_ret_value_ = NULL;
   system_call_ = NULL;
+  next_address_ = NULL;
   reserved_comment_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -5522,6 +5529,7 @@ void ins_con_info_t::SharedDtor() {
     delete call_;
     delete ret_ret_value_;
     delete system_call_;
+    delete next_address_;
   }
 }
 
@@ -5571,9 +5579,14 @@ void ins_con_info_t::Clear() {
       if (system_call_ != NULL) system_call_->::trace_format::syscall_t::Clear();
     }
   }
-  if (has_reserved_comment()) {
-    if (reserved_comment_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-      reserved_comment_->clear();
+  if (_has_bits_[8 / 32] & 768) {
+    if (has_next_address()) {
+      if (next_address_ != NULL) next_address_->::trace_format::address_t::Clear();
+    }
+    if (has_reserved_comment()) {
+      if (reserved_comment_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+        reserved_comment_->clear();
+      }
     }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -5696,6 +5709,19 @@ bool ins_con_info_t::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
+        if (input->ExpectTag(74)) goto parse_next_address;
+        break;
+      }
+
+      // optional .trace_format.address_t next_address = 9;
+      case 9: {
+        if (tag == 74) {
+         parse_next_address:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_next_address()));
+        } else {
+          goto handle_unusual;
+        }
         if (input->ExpectTag(82)) goto parse_reserved_comment;
         break;
       }
@@ -5786,6 +5812,12 @@ void ins_con_info_t::SerializeWithCachedSizes(
       8, this->system_call(), output);
   }
 
+  // optional .trace_format.address_t next_address = 9;
+  if (has_next_address()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      9, this->next_address(), output);
+  }
+
   // optional bytes reserved_comment = 10;
   if (has_reserved_comment()) {
     ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
@@ -5855,6 +5887,13 @@ void ins_con_info_t::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::
       WriteMessageNoVirtualToArray(
         8, this->system_call(), target);
+  }
+
+  // optional .trace_format.address_t next_address = 9;
+  if (has_next_address()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        9, this->next_address(), target);
   }
 
   // optional bytes reserved_comment = 10;
@@ -5933,6 +5972,13 @@ int ins_con_info_t::ByteSize() const {
 
   }
   if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    // optional .trace_format.address_t next_address = 9;
+    if (has_next_address()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->next_address());
+    }
+
     // optional bytes reserved_comment = 10;
     if (has_reserved_comment()) {
       total_size += 1 +
@@ -5993,6 +6039,9 @@ void ins_con_info_t::MergeFrom(const ins_con_info_t& from) {
     }
   }
   if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    if (from.has_next_address()) {
+      mutable_next_address()->::trace_format::address_t::MergeFrom(from.next_address());
+    }
     if (from.has_reserved_comment()) {
       set_reserved_comment(from.reserved_comment());
     }
@@ -6036,6 +6085,9 @@ bool ins_con_info_t::IsInitialized() const {
   if (has_system_call()) {
     if (!this->system_call().IsInitialized()) return false;
   }
+  if (has_next_address()) {
+    if (!this->next_address().IsInitialized()) return false;
+  }
   return true;
 }
 
@@ -6049,6 +6101,7 @@ void ins_con_info_t::Swap(ins_con_info_t* other) {
     std::swap(call_, other->call_);
     std::swap(ret_ret_value_, other->ret_ret_value_);
     std::swap(system_call_, other->system_call_);
+    std::swap(next_address_, other->next_address_);
     std::swap(reserved_comment_, other->reserved_comment_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);

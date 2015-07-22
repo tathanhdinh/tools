@@ -283,13 +283,17 @@ static auto initialize_instruction (ADDRINT ins_addr, THREADID thread_id) -> voi
       ((state_of_thread[thread_id] == SELECTIVE_SUSPENDED) && (cached_ins_at_addr[ins_addr]->is_syscall))) {
 
 //    tfm::printfln("initialize instruction of thread %d at %s", thread_id, StringFromAddrint(ins_addr));
-    ins_at_thread[thread_id] = dyn_ins_t(ins_addr,      // instruction address
-                                         thread_id,     // thread id
-                                         dyn_regs_t(),  // read registers
-                                         dyn_regs_t(),  // write registers
-                                         dyn_mems_t(),  // read memory addresses
-                                         dyn_mems_t(),
-                                         concrete_info_t{}); // write memory addresses
+    ins_at_thread[thread_id] = dyn_ins_t
+                               (
+                                 ins_addr,          // instruction address
+                                 thread_id,         // thread id
+                                 dyn_regs_t(),      // read registers
+                                 dyn_regs_t(),      // written registers
+                                 dyn_mems_t(),      // read memory addresses
+                                 dyn_mems_t(),
+                                 concrete_info_t{}, // written memory addresses
+                                 0x0                // next instruction address
+                               );
   }
   return;
 }
@@ -362,7 +366,6 @@ enum rw_t { READ = 0, WRITE = 1 };
 template <rw_t read_or_write>
 static auto save_memory (ADDRINT mem_addr, UINT32 mem_size, THREADID thread_id) -> void
 {
-//  tfm::printfln("%s", __FUNCTION__);
   static_assert((read_or_write == READ) || (read_or_write == WRITE), "unknown action");
 
   static auto save_memory_size = std::map<
@@ -475,16 +478,15 @@ static auto save_call_concrete_info (ADDRINT called_addr, THREADID thread_id) ->
 }
 
 
-static auto add_to_trace (THREADID thread_id) -> void
+static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
 {
-//  tfm::printfln("%s", __FUNCTION__);
-
   if (ins_at_thread.find(thread_id) != ins_at_thread.end()) {
 
     if ((state_of_thread[thread_id] == ENABLED) ||
         ((state_of_thread[thread_id] == SELECTIVE_SUSPENDED) &&
          cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_syscall)) {
 
+      std::get<INS_NEXT_ADDRESS>(ins_at_thread[thread_id]) = ins_addr;
       trace.push_back(ins_at_thread[thread_id]);
       if (trace.size() >= 10000) cap_flush_trace();
 
@@ -761,13 +763,14 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
 
     if (some_thread_is_not_suspended || some_thread_is_selective_suspended) {
       static_assert(std::is_same<
-                    decltype(add_to_trace), VOID (UINT32)
+                    decltype(add_to_trace), VOID (ADDRINT, UINT32)
                     >::value, "invalid callback function type");
 
-      INS_InsertCall(ins,                                               // instrumented instruction
-                     IPOINT_BEFORE,                                     // instrumentation point
-                     reinterpret_cast<AFUNPTR>(add_to_trace),           // callback analysis function
-                     IARG_THREAD_ID,                                    // thread id
+      INS_InsertCall(ins,
+                     IPOINT_BEFORE,
+                     reinterpret_cast<AFUNPTR>(add_to_trace),
+                     IARG_INST_PTR,
+                     IARG_THREAD_ID,
                      IARG_END);
 
     } // end of if (some_thread_is_not_suspended || some_thread_is_selective_suspended)

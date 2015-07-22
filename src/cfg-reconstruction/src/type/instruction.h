@@ -2,7 +2,7 @@
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H
 
-#include "../../parsing_helper.h"
+#include "../parsing_helper.h"
 #include <pin.H>
 extern "C" {
 #include "xed-interface.h"
@@ -12,8 +12,6 @@ extern "C" {
 #include <memory>
 #include <vector>
 #include <map>
-
-#include "../tinyformat.h" // for testing only
 
 class instruction
 {
@@ -32,7 +30,6 @@ class instruction
   bool is_call;
   bool is_branch;
   bool is_syscall;
-//  bool is_sysret;
   bool is_ret;
   bool is_special;
 
@@ -47,17 +44,17 @@ class instruction
   bool has_memory_read_2;
 
  public:
-  instruction(const INS& ins);
+  instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode_buffer_size);
 };
 
-typedef std::shared_ptr<instruction> p_instruction_t;
-typedef std::vector<p_instruction_t> p_instructions_t;
-typedef std::map<ADDRINT, p_instruction_t> map_address_instruction_t;
-typedef std::shared_ptr<map_address_instruction_t> p_map_address_instruction_t;
-//using p_instruction_t             = std::shared_ptr<instruction>;
-//using p_instructions_t            = std::vector<p_instruction_t>;
-//using map_address_instruction_t   = std::map<ADDRINT, p_instruction_t>;
-//using p_map_address_instruction_t = std::shared_ptr<map_address_instruction_t>;
+//typedef std::shared_ptr<instruction> p_instruction_t;
+//typedef std::vector<p_instruction_t> p_instructions_t;
+//typedef std::map<ADDRINT, p_instruction_t> map_address_instruction_t;
+//typedef std::shared_ptr<map_address_instruction_t> p_map_address_instruction_t;
+using p_instruction_t             = std::shared_ptr<instruction>;
+using p_instructions_t            = std::vector<p_instruction_t>;
+using map_address_instruction_t   = std::map<ADDRINT, p_instruction_t>;
+using p_map_address_instruction_t = std::shared_ptr<map_address_instruction_t>;
 
 #endif
 

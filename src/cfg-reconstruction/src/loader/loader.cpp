@@ -2,6 +2,8 @@
 #include "../type/instruction.h"
 #include "../type/trace.h"
 
+#include "../tinyformat.h"
+
 #include <memory>
 #include <fstream>
 
@@ -21,8 +23,24 @@ static auto parse_trace_header () -> void
     protobuf_trace_file.read(header_buffer.get(), header_size);
   }
   catch (const std::exception& expt) {
-    tfm::printfln("catched exception: %s", expt.what());
+    tfm::printfln("fatal exception: %s", expt.what());
     std::exit(1);
+  }
+
+  return;
+}
+
+
+static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> void
+{
+  auto inst_chunk = trace_format::chunk_t();
+  if (!inst_chunk.ParseFromArray(buffer, buffer_size)) throw 1;
+
+  for (auto i = 0; i < inst_chunk.body_size(); ++i) {
+    const auto& body = inst_chunk.body(i);
+    if (body.typeid_() == trace_format::INSTRUCTION) {
+      const auto& inst = body.instruction();
+    }
   }
 
   return;
@@ -31,11 +49,24 @@ static auto parse_trace_header () -> void
 
 static auto parse_trace_chunks () -> void
 {
-  auto trunk_size = int{0};
+  auto chunk_size = int{0};
   try {
-    protobuf_trace_file.read(reinterpret_cast<char*>(&trunk_size), sizeof(decltype(trunk_size)));
+    protobuf_trace_file.read(reinterpret_cast<char*>(&chunk_size), sizeof(decltype(chunk_size)));
+
+    auto chunk_buffer = std::shared_ptr<char>(new char[chunk_size], std::default_delete<char[]>());
+    protobuf_trace_file.read(chunk_buffer.get(), chunk_size);
+
+    parse_chunk_from_buffer(chunk_buffer.get(), chunk_size);
+  }
+  catch (uint8_t expt_code) {
+    tfm::printfln("parsing message failed, error code %d\n", expt_code);
+    std::exit(1);
   }
   catch (const std::exception& expt) {
     tfm::printfln("catched exception: %s", expt.what());
   }
+
+  google::protobuf::ShutdownProtobufLibrary();
+
+  return;
 }
