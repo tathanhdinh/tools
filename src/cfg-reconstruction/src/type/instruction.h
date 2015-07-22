@@ -15,6 +15,10 @@ extern "C" {
 
 class instruction
 {
+public:
+  static xed_machine_mode_enum_t machine_mode;
+  static xed_address_width_enum_t address_with;
+
  public:
   ADDRINT     address;
   ADDRINT     next_address;

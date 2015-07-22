@@ -43,13 +43,14 @@ if(NOT DEFINED BOOST_ROOT_DIR)
 endif(NOT DEFINED BOOST_ROOT_DIR)
 message(STATUS "BOOST_ROOT_DIR: ${BOOST_ROOT_DIR}")
 
+set(PIN_LIBS pin pinvm libxed)
 set(PROTOBUF_LIBS libprotobuf)
 
 set(PIN_DEFS "/D TARGET_IA32 /D HOST_IA32 /D TARGET_WINDOWS /D USING_XED /D_SECURE_SCL=0 /D_ITERATOR_DEBUG_LEVEL=0 /Zc:auto")
 set(PROTOBUF_DEFS "/D PROTOBUF_USE_DLLS")
 
 include_directories(${BOOST_ROOT_DIR} ${PIN_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS})
-link_directories(${PIN_LIBRARY_DIRS} ${PROTOBUF_LIB_DIRS})
+link_directories(${PIN_LIB_DIRS} ${PROTOBUF_LIB_DIRS})
 
 add_definitions(${PIN_DEFS} ${PROTOBUF_DEFS})
 
@@ -65,5 +66,5 @@ set(SRC_LIST
 #set(SRC_LIST ${LOADER_FILES} ${GRAPH_FILES})
 #aux_source_directory(src SRC_LIST)
 add_executable(${PROJECT_NAME} ${SRC_LIST})
-target_link_libraries(${PROJECT_NAME} ${PROTOBUF_LIBS})
+target_link_libraries(${PROJECT_NAME} ${PIN_LIBS} ${PROTOBUF_LIBS})
 

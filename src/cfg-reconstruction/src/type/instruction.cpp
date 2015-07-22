@@ -1,11 +1,49 @@
 #include "instruction.h"
 
+static char disasm_buffer[100];
+
 instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode_buffer_size)
 {
   this->address = ins_addr;
 
-  auto xedd_inst = xed_decoded_inst_t{};
+  auto xed_inst = xed_decoded_inst_t{};
+  xed_decoded_inst_zero(&xed_inst);
+  xed_decoded_inst_set_mode(&xed_inst, instruction::machine_mode, instruction::address_with);
 
+  auto decode_err = xed_decode(&xed_inst, XED_STATIC_CAST(const xed_uint8_t*, opcode_buffer), opcode_buffer_size);
+  if (decode_err != XED_ERROR_NONE) throw decode_err;
+
+  auto disasm_err = xed_format_intel(&xed_inst, disasm_buffer, 100, ins_addr);
+  if (disasm_err != 0) throw disasm_err;
+
+  this->disassemble = std::string(disasm_buffer);
+
+  this->category = xed_decoded_inst_get_category(&xed_inst);
+  this->is_call = (this->category == XED_CATEGORY_CALL);
+  this->is_branch = (this->category == XED_CATEGORY_COND_BR);
+  this->is_ret = (this->category == XED_CATEGORY_RET);
+
+  this->iclass = xed_decoded_inst_get_iclass(&xed_inst);
+
+  auto xi = xed_decoded_inst_inst(&xed_inst);
+  auto ins_noperands = xed_inst_noperands(xi);
+
+  for (decltype(ins_noperands) idx = 0; idx < ins_noperands; ++idx) {
+    auto ins_operand = xed_inst_operand(xi, idx);
+    auto operand_name = xed_operand_name(ins_operand);
+
+    if (xed_operand_is_register(operand_name)) {
+      if (xed_operand_read(ins_operand)) {
+        auto xed_read_reg = xed_decoded_inst_get_reg(&xed_inst, operand_name);
+        this->src_registers.push_back(INS_XedExactMapToPinReg(xed_read_reg));
+      }
+
+      if (xed_operand_written(ins_operand)) {
+        auto xed_written_reg = xed_decoded_inst_get_reg(&xed_inst, operand_name);
+        this->dst_registers.push_back(INS_XedExactMapToPinReg(xed_written_reg));
+      }
+    }
+  }
 
 //  this->address     = INS_Address(ins);
 //  this->next_address = INS_NextAddress(ins);
