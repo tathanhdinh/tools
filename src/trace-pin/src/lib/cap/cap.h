@@ -2,24 +2,25 @@
 #define CAP_H
 
 #include "../../parsing_helper.h"
+#include <cstdint>
 #include <pin.H>
 
 // support functions
-auto cap_initialize                         () noexcept                                                       -> void;
-auto cap_initialize_state                   () noexcept                                                       -> void;
-auto cap_set_trace_length                   (uint32_t trace_length) noexcept                                  -> void;
-auto cap_set_start_address                  (ADDRINT address) noexcept                                        -> void;
-auto cap_set_stop_address                   (ADDRINT address) noexcept                                        -> void;
-auto cap_add_full_skip_call_address         (ADDRINT address) noexcept                                        -> void;
-auto cap_add_selective_skip_address         (ADDRINT address) noexcept                                        -> void;
-auto cap_add_auto_skip_call_addresses       (ADDRINT address) noexcept                                        -> void;
-auto cap_set_loop_count                     (uint32_t count) noexcept                                         -> void;
+auto cap_initialize                         ()                                                        -> void;
+auto cap_initialize_state                   ()                                                        -> void;
+auto cap_set_trace_length                   (uint32_t trace_length)                                   -> void;
+auto cap_set_start_address                  (ADDRINT address)                                         -> void;
+auto cap_set_stop_address                   (ADDRINT address)                                         -> void;
+auto cap_add_full_skip_call_address         (ADDRINT address)                                         -> void;
+auto cap_add_selective_skip_address         (ADDRINT address)                                         -> void;
+auto cap_add_auto_skip_call_addresses       (ADDRINT address)                                         -> void;
+auto cap_set_loop_count                     (uint32_t count)                                          -> void;
 auto cap_verify_parameters                  ()                                                                -> void;
 
 auto cap_add_patched_memory_value           (ADDRINT ins_address, UINT32 exec_order, bool be_or_af,
-                                             ADDRINT mem_address, UINT8 mem_size, ADDRINT mem_value) noexcept -> void;
+                                             ADDRINT mem_address, UINT8 mem_size, ADDRINT mem_value)  -> void;
 auto cap_add_patched_register_value         (ADDRINT ins_address, UINT32 exec_order, bool be_or_af,
-                                             REG reg, UINT8 lo_pos, UINT8 hi_pos, ADDRINT reg_value) noexcept -> void;
+                                             REG reg, UINT8 lo_pos, UINT8 hi_pos, ADDRINT reg_value)  -> void;
 
 // report functions
 //auto cap_save_trace_to_file                 (const std::string& filename, bool simple_or_proto) noexcept      -> void;
@@ -27,9 +28,9 @@ auto cap_add_patched_register_value         (ADDRINT ins_address, UINT32 exec_or
 //auto cap_save_trace_to_dot_file             (const std::string& filename) noexcept                            -> void;
 //auto cap_save_basic_block_cfg_to_dot_file   (const std::string& filename) noexcept                            -> void;
 //auto cap_save_basic_block_trace_to_file     (const std::string& filename) noexcept                            -> void;
-auto cap_parser_initialize (const std::string& filename) noexcept -> void;
-auto cap_flush_trace () noexcept -> void;
-auto cap_parser_finalize () noexcept -> void;
+auto cap_parser_initialize (const std::string& filename) -> void;
+auto cap_flush_trace () -> void;
+auto cap_parser_finalize () -> void;
 
 // instrumentation functions
 // instruction mode

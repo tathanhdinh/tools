@@ -153,7 +153,7 @@ auto save_in_simple_format (std::ofstream& output_stream) -> void
 }
 
 
-static auto set_trace_header () noexcept -> void
+static auto set_trace_header () -> void
 {
   auto trace_header = trace_format::header_t();
 
@@ -208,7 +208,7 @@ static auto set_trace_header () noexcept -> void
 //}
 
 
-static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t& ins) noexcept -> void
+static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t& ins) -> void
 {
   auto ins_address = std::get<INS_ADDRESS>(ins);
   auto p_static_ins = cached_ins_at_addr[ins_address];
@@ -379,7 +379,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
     {
     case 0: /* SYS_OPEN */
     {
-      sys_concrete_info->set_id(SYS_OPEN);
+      sys_concrete_info->set_id(CAP_SYS_OPEN);
       sys_sup_info->set_typeid_(trace_format::OPEN_SYSCALL);
 
       auto sys_open_info = boost::get<sys_open_info_t>(syscall_info);
@@ -395,7 +395,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
 
     case 1: /* SYS_READ */
     {
-      sys_concrete_info->set_id(SYS_READ);
+      sys_concrete_info->set_id(CAP_SYS_READ);
       sys_sup_info->set_typeid_(trace_format::READ_SYSCALL);
 
       auto sys_read_info = boost::get<sys_read_info_t>(syscall_info);
@@ -427,7 +427,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
 
     case 2: /* SYS_WRITE */
     {
-      sys_concrete_info->set_id(SYS_WRITE);
+      sys_concrete_info->set_id(CAP_SYS_WRITE);
       sys_sup_info->set_typeid_(trace_format::WRITE_SYSCALL);
 
       auto sys_write_info = boost::get<sys_write_info_t>(syscall_info);
@@ -546,15 +546,23 @@ auto flush_trace_in_protobuf_format () -> void
       add_trace_instruction(protobuf_chunk, ins);
     }
 
-    auto trace_segment = std::string();
-    protobuf_chunk.SerializePartialToString(&trace_segment);
+    auto chunk_size = protobuf_chunk.ByteSize();
+    protobuf_trace_file.write(reinterpret_cast<const char*>(&chunk_size), sizeof(decltype(chunk_size)));
+    protobuf_chunk.SerializeToOstream(&protobuf_trace_file);
 
     trace.clear();
     protobuf_chunk.Clear();
 
-    uint32_t segment_length = trace_segment.length();
-    protobuf_trace_file.write(reinterpret_cast<const char*>(&segment_length), sizeof(uint32_t));
-    protobuf_trace_file.write(trace_segment.data(), segment_length);
+//    auto trace_segment = std::string();
+//    protobuf_chunk.SerializeAsString(&trace_segment);
+
+//    trace.clear();
+//    protobuf_chunk.Clear();
+
+//    uint32_t segment_length = trace_segment.length();
+//    tfm::printfln("segment size %d", segment_length);
+//    protobuf_trace_file.write(reinterpret_cast<const char*>(&segment_length), sizeof(uint32_t));
+//    protobuf_trace_file.write(trace_segment.data(), segment_length);
   }
 
   return;
@@ -602,7 +610,7 @@ auto flush_trace_in_protobuf_format () -> void
 /*                                                     exported functions                                             */
 /*====================================================================================================================*/
 
-auto cap_parser_initialize (const std::string& filename) noexcept -> void
+auto cap_parser_initialize (const std::string& filename) -> void
 {
   try {
     protobuf_trace_file.open(filename.c_str(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
@@ -614,13 +622,13 @@ auto cap_parser_initialize (const std::string& filename) noexcept -> void
   }
 }
 
-auto cap_flush_trace () noexcept -> void
+auto cap_flush_trace () -> void
 {
   flush_trace_in_protobuf_format();
   return;
 }
 
-auto cap_parser_finalize () noexcept -> void
+auto cap_parser_finalize () -> void
 {
   try {
     tfm::printfln("trace length: %d instructions", trace_length);
@@ -630,7 +638,7 @@ auto cap_parser_finalize () noexcept -> void
     google::protobuf::ShutdownProtobufLibrary();
   }
   catch (const std::exception& expt) {
-    tfm::printfln("%s", expt.what());
+    tfm::printfln("exception %s", expt.what());
     PIN_ExitProcess(1);
   }
 }
@@ -654,7 +662,7 @@ auto cap_parser_finalize () noexcept -> void
 //}
 
 
-auto cap_load_trace_from_file (std::string& filename) noexcept -> void
+auto cap_load_trace_from_file (std::string& filename) -> void
 {
   std::ifstream trace_file(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 

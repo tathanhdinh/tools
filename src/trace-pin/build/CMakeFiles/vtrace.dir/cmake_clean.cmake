@@ -1,11 +1,13 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/vtrace.dir/src/main.cpp.o"
-  "CMakeFiles/vtrace.dir/src/lib/cap/tracer.cpp.o"
-  "CMakeFiles/vtrace.dir/src/lib/cap/parser.cpp.o"
-  "CMakeFiles/vtrace.dir/src/lib/type/instruction.cpp.o"
-  "CMakeFiles/vtrace.dir/src/lib/type/trace.pb.cc.o"
+  "CMakeFiles/vtrace.dir/src/main.cpp.obj"
+  "CMakeFiles/vtrace.dir/src/lib/cap/tracer.cpp.obj"
+  "CMakeFiles/vtrace.dir/src/lib/cap/parser.cpp.obj"
+  "CMakeFiles/vtrace.dir/src/lib/type/instruction.cpp.obj"
+  "CMakeFiles/vtrace.dir/src/lib/type/trace.pb.cc.obj"
   "vtrace.pdb"
-  "vtrace.pin"
+  "vtrace.dll"
+  "vtrace.lib"
+  "vtrace.dll.manifest"
 )
 
 # Per-language clean rules from dependency scanning.

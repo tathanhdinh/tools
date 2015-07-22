@@ -1,13 +1,14 @@
 #include "cap.h"
 #include "trace.h"
 
-#include "../framework/analysis_callback.h"
+//#include "../framework/analysis_callback.h"
 
 #include "../tinyformat.h" // for testing purpose
 
 #include <limits>
 #include <cassert>
 #include <bitset>
+#include <functional>
 
 #include <boost/type_traits.hpp>
 #include <typeinfo>
@@ -110,7 +111,7 @@ auto normalize_hex_string (const std::string& input) -> std::string
 }
 
 static auto reinstrument_if_some_thread_started (ADDRINT current_addr,
-                                                 ADDRINT next_addr, const CONTEXT* p_ctxt) noexcept -> void
+                                                 ADDRINT next_addr, const CONTEXT* p_ctxt) -> void
 {
 //  assert(current_addr != start_address);
   assert(!some_thread_is_started);
@@ -144,7 +145,7 @@ static auto reinstrument_if_some_thread_started (ADDRINT current_addr,
 }
 
 
-static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt) noexcept -> void
+static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt) -> void
 {
 //  tfm::printfln("%s", __FUNCTION__);
 
@@ -183,7 +184,7 @@ static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt) noex
 
 
 template <event_t event>
-static auto update_condition (ADDRINT ins_addr, THREADID thread_id) noexcept -> void
+static auto update_condition (ADDRINT ins_addr, THREADID thread_id) -> void
 {
 //  tfm::printfln("instruction %s : %s", normalize_hex_string(StringFromAddrint(ins_addr)), cached_ins_at_addr[ins_addr]->disassemble);
 
@@ -276,7 +277,7 @@ static auto update_condition (ADDRINT ins_addr, THREADID thread_id) noexcept -> 
 }
 
 
-static auto initialize_instruction (ADDRINT ins_addr, THREADID thread_id) noexcept -> void
+static auto initialize_instruction (ADDRINT ins_addr, THREADID thread_id) -> void
 {
   if ((state_of_thread[thread_id] == ENABLED) ||
       ((state_of_thread[thread_id] == SELECTIVE_SUSPENDED) && (cached_ins_at_addr[ins_addr]->is_syscall))) {
@@ -294,7 +295,7 @@ static auto initialize_instruction (ADDRINT ins_addr, THREADID thread_id) noexce
 }
 
 
-static auto update_resume_address (ADDRINT resume_addr, THREADID thread_id) noexcept -> void
+static auto update_resume_address (ADDRINT resume_addr, THREADID thread_id) -> void
 {
   assert(state_of_thread.find(thread_id) != state_of_thread.end());
 
@@ -309,7 +310,7 @@ static auto update_resume_address (ADDRINT resume_addr, THREADID thread_id) noex
 
 
 template <bool read_or_write>
-static auto save_register (const CONTEXT* p_context, THREADID thread_id) noexcept -> void
+static auto save_register (const CONTEXT* p_context, THREADID thread_id) -> void
 {
 //  tfm::printfln("%s", __FUNCTION__);
 
@@ -359,7 +360,7 @@ auto assign_value (dyn_mems_t& mem_map, ADDRINT addr) -> void
 enum rw_t { READ = 0, WRITE = 1 };
 
 template <rw_t read_or_write>
-static auto save_memory (ADDRINT mem_addr, UINT32 mem_size, THREADID thread_id) noexcept -> void
+static auto save_memory (ADDRINT mem_addr, UINT32 mem_size, THREADID thread_id) -> void
 {
 //  tfm::printfln("%s", __FUNCTION__);
   static_assert((read_or_write == READ) || (read_or_write == WRITE), "unknown action");
@@ -426,7 +427,7 @@ static auto save_memory (ADDRINT mem_addr, UINT32 mem_size, THREADID thread_id) 
 //  return;
 //}
 
-static auto save_call_concrete_info (ADDRINT called_addr, THREADID thread_id) noexcept -> void
+static auto save_call_concrete_info (ADDRINT called_addr, THREADID thread_id) -> void
 {
   auto get_called_func_name = [](ADDRINT called_addr) -> std::string {
     PIN_LockClient();
@@ -474,7 +475,7 @@ static auto save_call_concrete_info (ADDRINT called_addr, THREADID thread_id) no
 }
 
 
-static auto add_to_trace (THREADID thread_id) noexcept -> void
+static auto add_to_trace (THREADID thread_id) -> void
 {
 //  tfm::printfln("%s", __FUNCTION__);
 
@@ -500,7 +501,7 @@ static auto add_to_trace (THREADID thread_id) noexcept -> void
 }
 
 
-static auto remove_previous_instruction (THREADID thread_id) noexcept -> void
+static auto remove_previous_instruction (THREADID thread_id) -> void
 {
 //  tfm::printfln("%s", __FUNCTION__);
 
@@ -513,7 +514,7 @@ static auto remove_previous_instruction (THREADID thread_id) noexcept -> void
 }
 
 
-static auto update_execution_order (ADDRINT ins_addr, THREADID thread_id) noexcept -> void
+static auto update_execution_order (ADDRINT ins_addr, THREADID thread_id) -> void
 {
   execution_order_of_address[ins_addr]++;
   return;
@@ -544,7 +545,7 @@ static auto patch_register_of_type (ADDRINT org_patch_val,
 
 static auto patch_register (ADDRINT ins_addr, bool patch_point,
                             UINT32 patch_reg, PIN_REGISTER* p_register,
-                            THREADID thread_id) noexcept -> void
+                            THREADID thread_id) -> void
 {
   assert(REG_valid(static_cast<REG>(patch_reg)) && "the needed to patch register is invalid");
 
@@ -589,7 +590,7 @@ static auto patch_register (ADDRINT ins_addr, bool patch_point,
 /*
  * Because the thread_id is not used in this function, the memory patching is realized actually by any thread.
  */
-static auto patch_memory (ADDRINT ins_addr, bool patch_point, ADDRINT patch_mem_addr, THREADID thread_id) noexcept -> void
+static auto patch_memory (ADDRINT ins_addr, bool patch_point, ADDRINT patch_mem_addr, THREADID thread_id) -> void
 {
   for (auto const& patch_mem_info : patched_memory_at_address) {
     
@@ -638,12 +639,6 @@ static auto save_before_handling (INS ins) -> void
                 decltype(save_register<WRITE>), VOID (const CONTEXT*, UINT32)
                 >::value, "invalid callback function type");
 
-  static_assert(is_well_formed<
-                decltype(save_register<WRITE>)
-                >::value<
-                IARG_CONST_CONTEXT, IARG_THREAD_ID
-                >(), "type conflict between instrument and callback functions");
-
   auto ins_address = INS_Address(ins);
   assert(!cached_ins_at_addr[ins_address]->is_special);
 
@@ -657,12 +652,6 @@ static auto save_before_handling (INS ins) -> void
   static_assert(std::is_same<
                 decltype(save_memory<WRITE>), VOID (ADDRINT, UINT32, UINT32)
                 >::value, "invalid callback function type");
-
-  static_assert(is_well_formed<
-                decltype(save_memory<WRITE>)
-                >::value<
-                IARG_ADDRINT, IARG_UINT32, IARG_THREAD_ID
-                >(), "type conflict between instrument and callback functions");
 
   INS_InsertCall(ins,
                  IPOINT_BEFORE,
@@ -680,12 +669,6 @@ static auto update_condition_before_handling (INS ins) -> void
   static_assert(std::is_same<
                 decltype(update_condition<ANY_TO_DISABLE>), VOID (ADDRINT, UINT32)
                 >::value, "invalid callback function type");
-
-  static_assert(is_well_formed<
-                decltype(update_condition<ANY_TO_DISABLE>)
-                >::value<
-                IARG_INST_PTR, IARG_THREAD_ID
-                >(), "type conflict between instrument and callback functions");
 
   INS_InsertCall(ins,
                  IPOINT_BEFORE,
@@ -750,12 +733,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                   decltype(update_condition<NEW_THREAD>), VOID (ADDRINT, THREADID)
                   >::value, "invalid callback function type");
 
-    static_assert(is_well_formed<
-                  decltype(update_condition<NEW_THREAD>)
-                  >::value<
-                  IARG_INST_PTR, IARG_THREAD_ID
-                  >(), "type conflict between instrument and callback functions");
-
     INS_InsertCall(ins,
                    IPOINT_BEFORE,
                    reinterpret_cast<AFUNPTR>(update_condition<NEW_THREAD>),
@@ -786,12 +763,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
       static_assert(std::is_same<
                     decltype(add_to_trace), VOID (UINT32)
                     >::value, "invalid callback function type");
-
-      static_assert(is_well_formed<
-                    decltype(add_to_trace)
-                    >::value<
-                    IARG_THREAD_ID
-                    >(), "type conflict between instrument and callback functions");
 
       INS_InsertCall(ins,                                               // instrumented instruction
                      IPOINT_BEFORE,                                     // instrumentation point
@@ -828,12 +799,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                       decltype(update_resume_address), VOID (ADDRINT, UINT32)
                       >::value, "invalid callback function type");
 
-        static_assert(is_well_formed<
-                      decltype(update_resume_address)
-                      >::value<
-                      IARG_ADDRINT, IARG_THREAD_ID
-                      >(), "type conflict between instrument and callback functions");
-
         INS_InsertCall(ins,
                        IPOINT_BEFORE,
                        reinterpret_cast<AFUNPTR>(update_resume_address),
@@ -865,12 +830,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                   decltype(reinstrument_because_of_suspended_state), VOID (const CONTEXT*)
                   >::value, "invalid callback function type");
 
-    static_assert(is_well_formed<
-                  decltype(reinstrument_because_of_suspended_state)
-                  >::value<
-                  IARG_CONST_CONTEXT
-                  >(), "type conflict between instrument and callback functions");
-
     // ATTENTION: cette fonction pourra changer l'instrumentation!!!!
     if (current_ins->is_special) {
       INS_InsertCall(ins,
@@ -896,12 +855,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                     decltype(initialize_instruction), VOID (ADDRINT, UINT32)
                     >::value, "invalid callback function type");
 
-      static_assert(is_well_formed<
-                    decltype(initialize_instruction)
-                    >::value<
-                    IARG_INST_PTR, IARG_THREAD_ID
-                    >(), "type conflict between instrument and callback functions");
-
       INS_InsertCall(ins,                                               // instrumented instruction
                      IPOINT_BEFORE,                                     // instrumentation point
                      reinterpret_cast<AFUNPTR>(initialize_instruction), // callback analysis function
@@ -914,12 +867,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
         static_assert(std::is_same<
                       decltype(save_call_concrete_info), VOID (ADDRINT, UINT32)
                       >::value, "invalid callback function type");
-
-        static_assert(is_well_formed<
-                      decltype(save_call_concrete_info)
-                      >::value<
-                      IARG_BRANCH_TARGET_ADDR, IARG_THREAD_ID
-                      >(), "type conflict between instrument and callback functions");
 
         INS_InsertCall(ins,
                        IPOINT_BEFORE,
@@ -935,12 +882,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                       decltype(save_register<READ>), VOID (const CONTEXT*, UINT32)
                       >::value, "invalid callback function type");
 
-        static_assert(is_well_formed<
-                      decltype(save_register<READ>)
-                      >::value<
-                      IARG_CONST_CONTEXT, IARG_THREAD_ID
-                      >(), "type conflict between instrument and callback functions");
-
         INS_InsertCall(ins,                                             // instrumented instruction
                        IPOINT_BEFORE,                                   // instrumentation point
                        reinterpret_cast<AFUNPTR>(save_register<READ>),  // callback analysis function
@@ -955,11 +896,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                       decltype(save_memory<READ>), VOID (ADDRINT, UINT32, UINT32)
                       >::value, "invalid callback function type");
 
-        static_assert(is_well_formed<
-                      decltype(save_memory<READ>)>::value<
-                      IARG_MEMORYREAD_EA, IARG_MEMORYREAD_SIZE, IARG_THREAD_ID
-                      >(), "type conflict between instrument and callback functions");
-
         INS_InsertCall(ins,                                             // instrumented instruction
                        IPOINT_BEFORE,                                   // instrumentation point
                        reinterpret_cast<AFUNPTR>(save_memory<READ>),    // callback analysis function (read)
@@ -970,12 +906,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
 
       if (current_ins->has_memory_read_2 && !current_ins->is_special) {
 
-        static_assert(is_well_formed<
-                      decltype(save_memory<READ>)
-                      >::value<
-                      IARG_MEMORYREAD2_EA, IARG_MEMORYREAD_SIZE, IARG_THREAD_ID
-                      >(), "type conflict between instrument and callback functions");
-
         INS_InsertCall(ins,                                             // instrumented instruction
                        IPOINT_BEFORE,                                   // instrumentation point
                        reinterpret_cast<AFUNPTR>(save_memory<READ>),    // callback analysis function (read)
@@ -985,12 +915,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
       }
 
       if (current_ins->is_memory_write && !current_ins->is_special) {
-
-        static_assert(is_well_formed<
-                      decltype(save_memory<WRITE>)
-                      >::value<
-                      IARG_MEMORYWRITE_EA, IARG_MEMORYWRITE_SIZE, IARG_THREAD_ID
-                      >(), "type conflict between instrument and callback functions");
 
         INS_InsertCall(ins,                                             // instrumented instruction
                        IPOINT_BEFORE,                                   // instrumentation point
@@ -1017,12 +941,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                       decltype(reinstrument_if_some_thread_started), VOID (ADDRINT, ADDRINT, const CONTEXT*)
                       >::value, "invalid callback function type");
 
-        static_assert(is_well_formed<
-                      decltype(reinstrument_if_some_thread_started)
-                      >::value<
-                      IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_CONST_CONTEXT
-                      >(), "type conflict between instrument and callback functions");
-
         INS_InsertCall(ins,
                        IPOINT_BEFORE,
                        reinterpret_cast<AFUNPTR>(reinstrument_if_some_thread_started),
@@ -1045,14 +963,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
           static_assert(std::is_same<
                         decltype(reinstrument_if_some_thread_started), VOID (ADDRINT, ADDRINT, const CONTEXT*)
                         >::value, "invalid callback function type");
-
-          static_assert(is_well_formed<
-                        decltype(reinstrument_if_some_thread_started)
-                        >::value<
-                        IARG_INST_PTR, IARG_ADDRINT, IARG_CONST_CONTEXT
-                        >(), "type conflict between instrument and callback functions");
-
-  //        tfm::printfln("%s : %s", normalize_hex_string(StringFromAddrint(current_ins->address)), current_ins->disassemble);
 
           INS_InsertCall(ins,
                          IPOINT_BEFORE,
@@ -1083,12 +993,6 @@ static auto insert_ins_patch_info_callbacks (INS ins) -> void
       static_assert(std::is_same<
                     decltype(update_execution_order), VOID (ADDRINT, UINT32)
                     >::value, "invalid callback function type");
-
-      static_assert(is_well_formed<
-                    decltype(update_execution_order)
-                    >::value<
-                    IARG_INST_PTR, IARG_THREAD_ID
-                    >(), "type conflict between instrument and callback functions");
 
       INS_InsertCall(ins,                                               // instrumented instruction
                      IPOINT_BEFORE,                                     // instrumentation point
@@ -1128,12 +1032,6 @@ static auto insert_ins_patch_info_callbacks (INS ins) -> void
                             decltype(patch_register), VOID (ADDRINT, bool, UINT32, PIN_REGISTER*, UINT32)
                             >::value, "invalid callback function type");
 
-              static_assert(is_well_formed<
-                            decltype(patch_register)
-                            >::value<
-                            IARG_INST_PTR, IARG_BOOL, IARG_UINT32, IARG_REG_REFERENCE, IARG_THREAD_ID
-                            >(), "type conflict between instrument and callback functions");
-
               INS_InsertCall(ins,                                       // instrumented instruction
                              pin_patch_point,                           // instrumentation point
                              reinterpret_cast<AFUNPTR>(patch_register), // callback analysis function
@@ -1171,12 +1069,6 @@ static auto insert_ins_patch_info_callbacks (INS ins) -> void
             static_assert(std::is_same<
                           decltype(patch_memory), VOID (ADDRINT, bool, ADDRINT, UINT32)
                           >::value, "invalid callback function type");
-
-            static_assert(is_well_formed<
-                          decltype(patch_memory)
-                          >::value<
-                          IARG_INST_PTR, IARG_BOOL, IARG_ADDRINT, IARG_THREAD_ID
-                          >(), "type conflict between instrument and callback functions");
 
             INS_InsertCall(ins,                                       // instrumented instruction
                            pin_patch_point,                           // instrumentation point
@@ -1224,7 +1116,7 @@ auto update_syscall_entry_info (dyn_ins_t& instruction) -> void
 }
 
 template<>
-auto update_syscall_entry_info<SYS_OPEN> (dyn_ins_t& instruction) -> void/*concrete_info_t*/
+auto update_syscall_entry_info<CAP_SYS_OPEN> (dyn_ins_t& instruction) -> void/*concrete_info_t*/
 {
   auto syscall_open_info = sys_open_info_t{};
 
@@ -1237,7 +1129,7 @@ auto update_syscall_entry_info<SYS_OPEN> (dyn_ins_t& instruction) -> void/*concr
   syscall_open_info.flags = flags;
 
   // mode
-  auto mode = static_cast<mode_t>(std::get<SYSCALL_ARG_2>(current_syscall_info));
+  auto mode = static_cast<int>(std::get<SYSCALL_ARG_2>(current_syscall_info));
   syscall_open_info.mode = mode;
 
   std::get<INS_CONCRETE_INFO>(instruction) = syscall_open_info;
@@ -1246,7 +1138,7 @@ auto update_syscall_entry_info<SYS_OPEN> (dyn_ins_t& instruction) -> void/*concr
 }
 
 template<>
-auto update_syscall_entry_info<SYS_READ> (dyn_ins_t& instruction) -> void/*concrete_info_t*/
+auto update_syscall_entry_info<CAP_SYS_READ> (dyn_ins_t& instruction) -> void/*concrete_info_t*/
 {
   auto syscall_read_info = sys_read_info_t{};
 
@@ -1272,7 +1164,7 @@ auto update_syscall_entry_info<SYS_READ> (dyn_ins_t& instruction) -> void/*concr
 }
 
 template<>
-auto update_syscall_entry_info<SYS_WRITE> (dyn_ins_t& instruction) -> void/*concrete_info_t*/
+auto update_syscall_entry_info<CAP_SYS_WRITE> (dyn_ins_t& instruction) -> void/*concrete_info_t*/
 {
   auto syscall_write_info = sys_write_info_t{};
 
@@ -1304,7 +1196,7 @@ auto update_syscall_entry_info<SYS_WRITE> (dyn_ins_t& instruction) -> void/*conc
 }
 
 template<>
-auto update_syscall_entry_info<SYS_OTHER> (dyn_ins_t& instruction) -> void
+auto update_syscall_entry_info<CAP_SYS_OTHER> (dyn_ins_t& instruction) -> void
 {
   std::get<INS_CONCRETE_INFO>(instruction) = sys_other_info_t(std::get<SYSCALL_ID>(current_syscall_info));
   return;
@@ -1339,20 +1231,20 @@ static auto save_syscall_entry_info (THREADID thread_id, CONTEXT* p_context, SYS
 
       switch (std::get<SYSCALL_ID>(current_syscall_info))
       {
-      case SYS_OPEN:
-        update_syscall_entry_info<SYS_OPEN>(ins_at_thread[thread_id]);
+      case CAP_SYS_OPEN:
+        update_syscall_entry_info<CAP_SYS_OPEN>(ins_at_thread[thread_id]);
         break;
 
-      case SYS_READ:
-        update_syscall_entry_info<SYS_READ>(ins_at_thread[thread_id]);
+      case CAP_SYS_READ:
+        update_syscall_entry_info<CAP_SYS_READ>(ins_at_thread[thread_id]);
         break;
 
-      case SYS_WRITE:
-        update_syscall_entry_info<SYS_WRITE>(ins_at_thread[thread_id]);
+      case CAP_SYS_WRITE:
+        update_syscall_entry_info<CAP_SYS_WRITE>(ins_at_thread[thread_id]);
         break;
 
       default:
-        update_syscall_entry_info<SYS_OTHER>(ins_at_thread[thread_id]);
+        update_syscall_entry_info<CAP_SYS_OTHER>(ins_at_thread[thread_id]);
         break;
       }
 
@@ -1371,7 +1263,7 @@ auto get_syscall_exit_concret_info (dyn_ins_t& instruction) -> void
 }
 
 template<>
-auto get_syscall_exit_concret_info<SYS_OPEN> (dyn_ins_t& instruction) -> void
+auto get_syscall_exit_concret_info<CAP_SYS_OPEN> (dyn_ins_t& instruction) -> void
 {
   assert(std::get<INS_CONCRETE_INFO>(instruction).which() == 0);
 
@@ -1384,7 +1276,7 @@ auto get_syscall_exit_concret_info<SYS_OPEN> (dyn_ins_t& instruction) -> void
 }
 
 template<>
-auto get_syscall_exit_concret_info<SYS_READ> (dyn_ins_t& instruction) -> void
+auto get_syscall_exit_concret_info<CAP_SYS_READ> (dyn_ins_t& instruction) -> void
 {
   assert(std::get<INS_CONCRETE_INFO>(instruction).which() == 1);
 
@@ -1413,7 +1305,7 @@ auto get_syscall_exit_concret_info<SYS_READ> (dyn_ins_t& instruction) -> void
 }
 
 template<>
-auto get_syscall_exit_concret_info<SYS_WRITE> (dyn_ins_t& instruction) -> void
+auto get_syscall_exit_concret_info<CAP_SYS_WRITE> (dyn_ins_t& instruction) -> void
 {
   assert(std::get<INS_CONCRETE_INFO>(instruction).which() == 2);
 
@@ -1426,7 +1318,7 @@ auto get_syscall_exit_concret_info<SYS_WRITE> (dyn_ins_t& instruction) -> void
 }
 
 template<>
-auto get_syscall_exit_concret_info<SYS_OTHER> (dyn_ins_t& instruction) -> void
+auto get_syscall_exit_concret_info<CAP_SYS_OTHER> (dyn_ins_t& instruction) -> void
 {
   assert(std::get<INS_CONCRETE_INFO>(instruction).which() == 3);
   return;
@@ -1457,19 +1349,19 @@ static auto save_syscall_exit_concret_info (THREADID thread_id,
       switch (type_idx)
       {
       case 0: /* SYS_OPEN */
-        get_syscall_exit_concret_info<SYS_OPEN>(ins_at_thread[thread_id]);
+        get_syscall_exit_concret_info<CAP_SYS_OPEN>(ins_at_thread[thread_id]);
         break;
 
       case 1: /* SYS_READ */
-        get_syscall_exit_concret_info<SYS_READ>(ins_at_thread[thread_id]);
+        get_syscall_exit_concret_info<CAP_SYS_READ>(ins_at_thread[thread_id]);
         break;
 
       case 2: /* SYS_WRITE */
-        get_syscall_exit_concret_info<SYS_WRITE>(ins_at_thread[thread_id]);
+        get_syscall_exit_concret_info<CAP_SYS_WRITE>(ins_at_thread[thread_id]);
         break;
 
       case 3: /* SYS_OTHER */
-        get_syscall_exit_concret_info<SYS_OTHER>(ins_at_thread[thread_id]);
+        get_syscall_exit_concret_info<CAP_SYS_OTHER>(ins_at_thread[thread_id]);
         break;
       }
 
@@ -1485,14 +1377,14 @@ static auto save_syscall_exit_concret_info (THREADID thread_id,
 /*====================================================================================================================*/
 
 
-static auto ins_mode_get_ins_info (INS ins, VOID* data) noexcept -> VOID
+static auto ins_mode_get_ins_info (INS ins, VOID* data) -> VOID
 {
   insert_ins_get_info_callbacks(ins);
   return;
 }
 
 
-static auto trace_mode_get_ins_info (TRACE trace, VOID* data) noexcept -> VOID
+static auto trace_mode_get_ins_info (TRACE trace, VOID* data) -> VOID
 {
   for (auto bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl)) {
     for (auto ins = BBL_InsHead(bbl); INS_Valid(ins); ins = INS_Next(ins)) {
@@ -1503,14 +1395,14 @@ static auto trace_mode_get_ins_info (TRACE trace, VOID* data) noexcept -> VOID
 }
 
 
-static auto ins_mode_patch_ins_info (INS ins, VOID* data) noexcept -> VOID
+static auto ins_mode_patch_ins_info (INS ins, VOID* data) -> VOID
 {
   insert_ins_patch_info_callbacks(ins);
   return;
 }
 
 
-static auto trace_mode_patch_ins_info (TRACE trace, VOID* data) noexcept -> VOID
+static auto trace_mode_patch_ins_info (TRACE trace, VOID* data) -> VOID
 {
   for (auto bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl)) {
     for (auto ins = BBL_InsHead(bbl); INS_Valid(ins); ins = INS_Next(ins)) {
@@ -1521,7 +1413,7 @@ static auto trace_mode_patch_ins_info (TRACE trace, VOID* data) noexcept -> VOID
 }
 
 
-static auto img_mode_get_ins_info (IMG img, VOID* data) noexcept -> VOID
+static auto img_mode_get_ins_info (IMG img, VOID* data) -> VOID
 {
 //  if (!some_thread_is_started) {
     for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec)) {
@@ -1563,7 +1455,7 @@ static auto img_mode_get_ins_info (IMG img, VOID* data) noexcept -> VOID
   return;
 }
 
-auto cap_initialize () noexcept -> void
+auto cap_initialize () -> void
 {
   cached_ins_at_addr.clear();
   resume_address_of_thread.clear();
@@ -1573,7 +1465,7 @@ auto cap_initialize () noexcept -> void
   return;
 }
 
-auto cap_initialize_state () noexcept -> void
+auto cap_initialize_state () -> void
 {
 //  some_thread_is_started = false;
   some_thread_is_started = (start_address == 0x0);
@@ -1586,35 +1478,35 @@ auto cap_initialize_state () noexcept -> void
 }
 
 
-auto cap_set_start_address (ADDRINT address) noexcept -> void
+auto cap_set_start_address (ADDRINT address) -> void
 {
   start_address = address;
   return;
 }
 
 
-auto cap_set_stop_address (ADDRINT address) noexcept -> void
+auto cap_set_stop_address (ADDRINT address) -> void
 {
   stop_address = address;
   return;
 }
 
 
-auto cap_add_full_skip_call_address (ADDRINT address) noexcept -> void
+auto cap_add_full_skip_call_address (ADDRINT address) -> void
 {
   full_skip_call_addresses.push_back(address);
   return;
 }
 
 
-auto cap_add_selective_skip_address (ADDRINT address) noexcept -> void
+auto cap_add_selective_skip_address (ADDRINT address) -> void
 {
   selective_skip_call_addresses.push_back(address);
   return;
 }
 
 
-auto cap_add_auto_skip_call_addresses (ADDRINT address) noexcept -> void
+auto cap_add_auto_skip_call_addresses (ADDRINT address) -> void
 {
 //  tfm::printfln("parse skip-auto at %s", normalize_hex_string(StringFromAddrint(address)));
   auto_skip_call_addresses.push_back(address);
@@ -1623,14 +1515,14 @@ auto cap_add_auto_skip_call_addresses (ADDRINT address) noexcept -> void
 }
 
 
-auto cap_set_loop_count (uint32_t count) noexcept -> void
+auto cap_set_loop_count (uint32_t count) -> void
 {
   loop_count = count;
   return;
 }
 
 
-auto cap_set_trace_length (uint32_t trace_length) noexcept -> void
+auto cap_set_trace_length (uint32_t trace_length) -> void
 {
   max_trace_length = trace_length;
   return;
@@ -1638,7 +1530,7 @@ auto cap_set_trace_length (uint32_t trace_length) noexcept -> void
 
 
 auto cap_add_patched_memory_value (ADDRINT ins_address, UINT32 exec_order, bool be_or_af,
-                                   ADDRINT mem_address, UINT8 mem_size, ADDRINT mem_value) noexcept -> void
+                                   ADDRINT mem_address, UINT8 mem_size, ADDRINT mem_value) -> void
 {
   auto exec_point         = exec_point_t(ins_address, exec_order);
   auto patched_exec_point = patch_point_t(exec_point, be_or_af);
@@ -1652,7 +1544,7 @@ auto cap_add_patched_memory_value (ADDRINT ins_address, UINT32 exec_order, bool 
 
 
 auto cap_add_patched_register_value (ADDRINT ins_address, UINT32 exec_order, bool be_or_af,
-                                     REG reg, UINT8 lo_pos, UINT8 hi_pos, ADDRINT reg_value) noexcept -> void
+                                     REG reg, UINT8 lo_pos, UINT8 hi_pos, ADDRINT reg_value) -> void
 {
   auto exec_point             = exec_point_t(ins_address, exec_order);
   auto patched_exec_point     = patch_point_t(exec_point, be_or_af);
@@ -1666,8 +1558,6 @@ auto cap_add_patched_register_value (ADDRINT ins_address, UINT32 exec_order, boo
 
 auto cap_verify_parameters () -> void
 {
-//  assert(start_address != 0x0);
-//  assert(stop_address != 0x0);
   tfm::printfln("start address %s", normalize_hex_string(StringFromAddrint(start_address)));
   tfm::printfln("stop address %s", normalize_hex_string(StringFromAddrint(stop_address)));
   return;

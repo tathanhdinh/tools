@@ -1,15 +1,15 @@
 #ifndef PARSING_HELPER_H
 #define PARSING_HELPER_H
 
-//#if defined(_WIN32)
-//#ifndef TARGET_WINDOWS
-//#define TARGET_WINDOWS
-//#endif
-//#else
-//#ifndef TARGET_LINUX
-//#define TARGET_LINUX
-//#endif
-//#endif
+#if defined(_WIN32)
+#ifndef TARGET_WINDOWS
+#define TARGET_WINDOWS
+#endif
+#else
+#ifndef TARGET_LINUX
+#define TARGET_LINUX
+#endif
+#endif
 
 #ifndef TARGET_IA32
 #define TARGET_IA32

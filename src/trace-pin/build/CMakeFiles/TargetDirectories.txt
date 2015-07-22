@@ -1,2 +1,1 @@
-/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/CMakeFiles/run.dir
-/home/bigraph/Documents/Binsec/gforge/plateforme/src/pintools/trace-pin/build/CMakeFiles/vtrace.dir
+C:/Users/Ta Thanh Dinh/Documents/Bitbucket/relative-pattern/src/trace-pin/build/CMakeFiles/vtrace.dir

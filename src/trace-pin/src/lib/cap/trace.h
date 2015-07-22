@@ -18,11 +18,11 @@ using dyn_mems_t = std::map<dyn_mem_t, ADDRINT>;
 
 enum
 {
-  SYS_READ   = 3,
-  SYS_WRITE  = 4,
-  SYS_OPEN   = 5,
-  SYS_SOCKET = 102,
-  SYS_OTHER = std::numeric_limits<uint32_t>::max()
+  CAP_SYS_READ   = 3,
+  CAP_SYS_WRITE  = 4,
+  CAP_SYS_OPEN   = 5,
+  CAP_SYS_SOCKET = 102,
+  CAP_SYS_OTHER  = 1000
 };
 
 template<uint32_t sys_id>
@@ -31,7 +31,7 @@ struct syscall_t
   enum { id = sys_id };
 };
 
-struct sys_read_info_t : syscall_t<SYS_READ>
+struct sys_read_info_t : syscall_t<CAP_SYS_READ>
 {
   int                      file_desc;
   ADDRINT                  buffer_addr;
@@ -40,7 +40,7 @@ struct sys_read_info_t : syscall_t<SYS_READ>
   std::shared_ptr<uint8_t> buffer;
 };
 
-struct sys_write_info_t : syscall_t<SYS_WRITE>
+struct sys_write_info_t : syscall_t<CAP_SYS_WRITE>
 {
   int                      file_desc;
   ADDRINT                  buffer_addr;
@@ -55,15 +55,15 @@ struct sys_write_info_t : syscall_t<SYS_WRITE>
 //  }
 };
 
-struct sys_open_info_t : syscall_t<SYS_OPEN>
+struct sys_open_info_t : syscall_t<CAP_SYS_OPEN>
 {
   std::string path_name;
   int         flags;
-  mode_t      mode;
+  int         mode;
   int         file_desc;
 };
 
-struct sys_other_info_t : syscall_t<SYS_OTHER>
+struct sys_other_info_t : syscall_t<CAP_SYS_OTHER>
 {
   uint32_t real_id;
   sys_other_info_t(uint32_t syscall_id) : real_id(syscall_id) {};
