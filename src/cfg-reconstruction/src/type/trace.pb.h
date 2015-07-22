@@ -145,6 +145,7 @@ enum typeid_con_info_t {
   RET = 5,
   SYSCALL = 6,
   NOT_RETRIEVED = 7,
+  NEXT_ADDRESS = 8,
   COMMENT = 255
 };
 bool typeid_con_info_t_IsValid(int value);
@@ -1790,6 +1791,15 @@ class ins_con_info_t : public ::google::protobuf::Message {
   inline ::trace_format::syscall_t* release_system_call();
   inline void set_allocated_system_call(::trace_format::syscall_t* system_call);
 
+  // optional .trace_format.address_t next_address = 9;
+  inline bool has_next_address() const;
+  inline void clear_next_address();
+  static const int kNextAddressFieldNumber = 9;
+  inline const ::trace_format::address_t& next_address() const;
+  inline ::trace_format::address_t* mutable_next_address();
+  inline ::trace_format::address_t* release_next_address();
+  inline void set_allocated_next_address(::trace_format::address_t* next_address);
+
   // optional bytes reserved_comment = 10;
   inline bool has_reserved_comment() const;
   inline void clear_reserved_comment();
@@ -1820,6 +1830,8 @@ class ins_con_info_t : public ::google::protobuf::Message {
   inline void clear_has_ret_ret_value();
   inline void set_has_system_call();
   inline void clear_has_system_call();
+  inline void set_has_next_address();
+  inline void clear_has_next_address();
   inline void set_has_reserved_comment();
   inline void clear_has_reserved_comment();
 
@@ -1834,6 +1846,7 @@ class ins_con_info_t : public ::google::protobuf::Message {
   ::trace_format::call_t* call_;
   ::trace_format::address_t* ret_ret_value_;
   ::trace_format::syscall_t* system_call_;
+  ::trace_format::address_t* next_address_;
   ::std::string* reserved_comment_;
   int typeid__;
   friend void  protobuf_AddDesc_trace_2eproto();
@@ -4355,15 +4368,56 @@ inline void ins_con_info_t::set_allocated_system_call(::trace_format::syscall_t*
   // @@protoc_insertion_point(field_set_allocated:trace_format.ins_con_info_t.system_call)
 }
 
-// optional bytes reserved_comment = 10;
-inline bool ins_con_info_t::has_reserved_comment() const {
+// optional .trace_format.address_t next_address = 9;
+inline bool ins_con_info_t::has_next_address() const {
   return (_has_bits_[0] & 0x00000100u) != 0;
 }
-inline void ins_con_info_t::set_has_reserved_comment() {
+inline void ins_con_info_t::set_has_next_address() {
   _has_bits_[0] |= 0x00000100u;
 }
-inline void ins_con_info_t::clear_has_reserved_comment() {
+inline void ins_con_info_t::clear_has_next_address() {
   _has_bits_[0] &= ~0x00000100u;
+}
+inline void ins_con_info_t::clear_next_address() {
+  if (next_address_ != NULL) next_address_->::trace_format::address_t::Clear();
+  clear_has_next_address();
+}
+inline const ::trace_format::address_t& ins_con_info_t::next_address() const {
+  // @@protoc_insertion_point(field_get:trace_format.ins_con_info_t.next_address)
+  return next_address_ != NULL ? *next_address_ : *default_instance_->next_address_;
+}
+inline ::trace_format::address_t* ins_con_info_t::mutable_next_address() {
+  set_has_next_address();
+  if (next_address_ == NULL) next_address_ = new ::trace_format::address_t;
+  // @@protoc_insertion_point(field_mutable:trace_format.ins_con_info_t.next_address)
+  return next_address_;
+}
+inline ::trace_format::address_t* ins_con_info_t::release_next_address() {
+  clear_has_next_address();
+  ::trace_format::address_t* temp = next_address_;
+  next_address_ = NULL;
+  return temp;
+}
+inline void ins_con_info_t::set_allocated_next_address(::trace_format::address_t* next_address) {
+  delete next_address_;
+  next_address_ = next_address;
+  if (next_address) {
+    set_has_next_address();
+  } else {
+    clear_has_next_address();
+  }
+  // @@protoc_insertion_point(field_set_allocated:trace_format.ins_con_info_t.next_address)
+}
+
+// optional bytes reserved_comment = 10;
+inline bool ins_con_info_t::has_reserved_comment() const {
+  return (_has_bits_[0] & 0x00000200u) != 0;
+}
+inline void ins_con_info_t::set_has_reserved_comment() {
+  _has_bits_[0] |= 0x00000200u;
+}
+inline void ins_con_info_t::clear_has_reserved_comment() {
+  _has_bits_[0] &= ~0x00000200u;
 }
 inline void ins_con_info_t::clear_reserved_comment() {
   if (reserved_comment_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {

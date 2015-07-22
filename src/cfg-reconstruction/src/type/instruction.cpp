@@ -45,6 +45,13 @@ instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode
     }
   }
 
+  this->is_memory_read = false; this->is_memory_write = false;
+  auto ins_mem_noperands = xed_decoded_inst_number_of_memory_operands(&xed_inst);
+  for (decltype(ins_mem_noperands) mem_idx = 0; mem_idx < ins_mem_noperands; ++mem_idx) {
+    if (xed_decoded_inst_mem_read(&xed_inst, mem_idx)) this->is_memory_read = true;
+    if (xed_decoded_inst_mem_written(&xed_inst, mem_idx)) this->is_memory_write = true;
+  }
+
 //  this->address     = INS_Address(ins);
 //  this->next_address = INS_NextAddress(ins);
 ////  this->opcode      = INS_Mnemonic(ins);

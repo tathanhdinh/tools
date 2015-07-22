@@ -22,12 +22,7 @@ public:
  public:
   ADDRINT     address;
   ADDRINT     next_address;
-//  std::string opcode;
-//  xed_decoded_inst_t* decoded_opcode;
-  uint8_t opcode_size;
   std::string disassemble;
-  std::string including_image;
-  std::string including_routine_name;
 
   bool has_fall_through;
 
@@ -35,7 +30,7 @@ public:
   bool is_branch;
   bool is_syscall;
   bool is_ret;
-  bool is_special;
+//  bool is_special;
 
   xed_category_enum_t category;
   xed_iclass_enum_t iclass;
@@ -45,7 +40,6 @@ public:
 
   bool is_memory_read;
   bool is_memory_write;
-  bool has_memory_read_2;
 
  public:
   instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode_buffer_size);

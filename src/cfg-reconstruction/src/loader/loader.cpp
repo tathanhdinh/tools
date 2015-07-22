@@ -39,7 +39,18 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
   for (auto i = 0; i < inst_chunk.body_size(); ++i) {
     const auto& body = inst_chunk.body(i);
     if (body.typeid_() == trace_format::INSTRUCTION) {
-      const auto& inst = body.instruction();
+      const auto& pb_inst_info = body.instruction();
+
+      const auto& pb_inst_addr = pb_inst_info.address();
+      auto ins_addr = pb_inst_addr.value_32();
+
+      if (cached_ins_at_addr.find(ins_addr) != std::end(cached_ins_at_addr)) {
+        const auto& pb_inst_opcode = pb_inst_info.opcode();
+        auto opcode_size = pb_inst_opcode.size();
+        auto opcode_buffer = pb_inst_opcode.data();
+
+        cached_ins_at_addr[ins_addr] = std::make_shared<instruction>(ins_addr, opcode_buffer, opcode_size);
+      }
     }
   }
 
