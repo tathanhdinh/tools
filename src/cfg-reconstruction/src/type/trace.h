@@ -36,7 +36,7 @@ struct syscall_t
 struct sys_read_info_t : syscall_t<CAP_SYS_READ>
 {
   int                      file_desc;
-  ADDRINT                  buffer_addr;
+  uint32_t                  buffer_addr;
   size_t                   buffer_length;
   size_t                   read_length;
   std::shared_ptr<uint8_t> buffer;
@@ -45,7 +45,7 @@ struct sys_read_info_t : syscall_t<CAP_SYS_READ>
 struct sys_write_info_t : syscall_t<CAP_SYS_WRITE>
 {
   int                      file_desc;
-  ADDRINT                  buffer_addr;
+  uint32_t                  buffer_addr;
   size_t                   buffer_length;
   size_t                   write_length;
   std::shared_ptr<uint8_t> buffer;
@@ -67,7 +67,7 @@ struct sys_other_info_t : syscall_t<CAP_SYS_OTHER>
 
 struct call_info_t
 {
-  ADDRINT     called_fun_addr;
+  uint32_t     called_fun_addr;
   std::string called_fun_name;
   bool        is_traced;
 };
@@ -82,8 +82,8 @@ typedef boost::variant
   > concrete_info_t;
 
 typedef std::tuple<
-  ADDRINT,        // address of instructions
-  THREADID,       // id of containing thread
+  uint32_t,        // address of instructions
+  uint32_t,       // id of containing thread
   dyn_regs_t,     // read registers
   dyn_regs_t,     // write registers
   dyn_mems_t,     // read memory addresses
@@ -92,7 +92,7 @@ typedef std::tuple<
   > dyn_ins_t;
 
 // list is prefered since new instructions will be added regularly
-typedef std::list<dyn_ins_t> dyn_inss_t;
+//typedef std::list<dyn_ins_t> dyn_inss_t;
 
 //extern dyn_inss_t                trace;
 //extern map_address_instruction_t cached_ins_at_addr;
@@ -108,5 +108,7 @@ enum
     INS_WRITE_MEMS    = 5,
     INS_CONCRETE_INFO = 6
   };
+
+using dyn_inss_t std::list<dyn_ins_t>;
 
 #endif // TRACE_H

@@ -3,11 +3,12 @@
 #define INSTRUCTION_H
 
 #include "../parsing_helper.h"
-#include <pin.H>
+//#include <pin.H>
 extern "C" {
 #include "xed-interface.h"
 }
 
+#include <cstdint>
 #include <string>
 #include <memory>
 #include <vector>
@@ -20,8 +21,8 @@ class instruction
 //  static const xed_address_width_enum_t address_with = XED_ADDRESS_WIDTH_32b;
 
  public:
-  ADDRINT     address;
-  ADDRINT     next_address;
+  uint32_t    address;
+  uint32_t    next_address;
   std::string disassemble;
 
   bool has_fall_through;
@@ -35,14 +36,14 @@ class instruction
   xed_category_enum_t category;
   xed_iclass_enum_t iclass;
 
-  std::vector<REG> src_registers;
-  std::vector<REG> dst_registers;
+  std::vector<xed_reg_enum_t> src_registers;
+  std::vector<xed_reg_enum_t> dst_registers;
 
   bool is_memory_read;
   bool is_memory_write;
 
  public:
-  instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode_buffer_size);
+  instruction(uint32_t ins_addr, const char* opcode_buffer, int opcode_buffer_size);
 };
 
 //typedef std::shared_ptr<instruction> p_instruction_t;
@@ -51,7 +52,7 @@ class instruction
 //typedef std::shared_ptr<map_address_instruction_t> p_map_address_instruction_t;
 using p_instruction_t             = std::shared_ptr<instruction>;
 using p_instructions_t            = std::vector<p_instruction_t>;
-using map_address_instruction_t   = std::map<ADDRINT, p_instruction_t>;
+using map_address_instruction_t   = std::map<uint32_t, p_instruction_t>;
 using p_map_address_instruction_t = std::shared_ptr<map_address_instruction_t>;
 
 #endif

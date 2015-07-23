@@ -167,14 +167,23 @@ static auto set_trace_header () -> void
     break;
   }
 
-  auto trace_segment = std::string();
-  trace_header.SerializeToString(&trace_segment);
+  auto header_size = trace_header.ByteSize();
+  auto header_buffer = std::shared_ptr<char>(new char[header_size], std::default_delete<char[]>());
 
-  trace_header.Clear();
+  trace_header.SerializeToArray(header_buffer.get(), header_size);
 
-  uint32_t segment_length = trace_segment.length();
-  protobuf_trace_file.write(reinterpret_cast<const char*>(&segment_length), sizeof(uint32_t));
-  protobuf_trace_file.write(trace_segment.data(), segment_length);
+  // save the length of the header and then the buffer containing header
+  protobuf_trace_file.write(reinterpret_cast<const char*>(&header_size), sizeof(decltype(header_size)));
+  protobuf_trace_file.write(header_buffer.get(), header_size);
+
+//  auto trace_segment = std::string();
+//  trace_header.SerializeToString(&trace_segment);
+
+//  trace_header.Clear();
+
+//  uint32_t segment_length = trace_segment.length();
+//  protobuf_trace_file.write(reinterpret_cast<const char*>(&segment_length), sizeof(uint32_t));
+//  protobuf_trace_file.write(trace_segment.data(), segment_length);
 
   return;
 }
@@ -558,8 +567,18 @@ auto flush_trace_in_protobuf_format () -> void
     }
 
     auto chunk_size = protobuf_chunk.ByteSize();
+    auto chunk_buffer = std::shared_ptr<char>(new char[chunk_size], std::default_delete<char[]>());
+
+    protobuf_chunk.SerializeToArray(chunk_buffer.get(), chunk_size);
+
     protobuf_trace_file.write(reinterpret_cast<const char*>(&chunk_size), sizeof(decltype(chunk_size)));
-    protobuf_chunk.SerializeToOstream(&protobuf_trace_file);
+    protobuf_trace_file.write(chunk_buffer.get(), chunk_size);
+
+    tfm::printfln("saved chunk size: %d bytes", chunk_size);
+
+//    tfm::printfln("saved chunk size: %d", chunk_size);
+
+//    protobuf_chunk.SerializeToOstream(&protobuf_trace_file);
 
     trace.clear();
     protobuf_chunk.Clear();

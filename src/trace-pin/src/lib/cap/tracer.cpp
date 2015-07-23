@@ -114,7 +114,8 @@ static auto reinstrument_if_some_thread_started (ADDRINT current_addr,
                                                  ADDRINT next_addr, const CONTEXT* p_ctxt) -> void
 {
 //  assert(current_addr != start_address);
-  assert(!some_thread_is_started);
+//  assert(!some_thread_is_started);
+  ASSERTX(!some_thread_is_started);
 
 //  tfm::printfln("%s : %s", normalize_hex_string(StringFromAddrint(current_addr)), cached_ins_at_addr[current_addr]->disassemble);
 
@@ -122,11 +123,8 @@ static auto reinstrument_if_some_thread_started (ADDRINT current_addr,
 //    assert(PIN_GetContextReg(p_ctxt, REG_STACK_PTR) == next_addr);
 
     auto return_addr = next_addr;
-//    tfm::printfln("stack value : %s", normalize_hex_string(StringFromAddrint(next_addr)));
     PIN_SafeCopy(&return_addr, reinterpret_cast<ADDRINT*>(next_addr), sizeof(ADDRINT));
     next_addr = return_addr;
-//    tfm::printfln("current %s : %s, next %s", normalize_hex_string(StringFromAddrint(current_addr)),
-//                  cached_ins_at_addr[current_addr]->disassemble, normalize_hex_string(StringFromAddrint(next_addr)));
   }
 
   if (next_addr == start_address) {
@@ -301,11 +299,10 @@ static auto initialize_instruction (ADDRINT ins_addr, THREADID thread_id) -> voi
 
 static auto update_resume_address (ADDRINT resume_addr, THREADID thread_id) -> void
 {
-  assert(state_of_thread.find(thread_id) != state_of_thread.end());
+//  assert(state_of_thread.find(thread_id) != state_of_thread.end());
+  ASSERTX(state_of_thread.find(thread_id) != state_of_thread.end());
 
   if (state_of_thread[thread_id] == ENABLED) {
-//    tfm::printfln("resume at %s", StringFromAddrint(resume_addr));
-
 //    assert(ins_at_thread.find(thread_id) != ins_at_thread.end());
     resume_address_of_thread[thread_id] = resume_addr;
   }
@@ -316,10 +313,6 @@ static auto update_resume_address (ADDRINT resume_addr, THREADID thread_id) -> v
 template <bool read_or_write>
 static auto save_register (const CONTEXT* p_context, THREADID thread_id) -> void
 {
-//  tfm::printfln("%s", __FUNCTION__);
-
-//  tfm::printfln("%d", ins_at_thread.size());
-
   if (ins_at_thread.find(thread_id) != ins_at_thread.end()) {
 
     auto ins_addr = std::get<INS_ADDRESS>(ins_at_thread[thread_id]);
@@ -328,18 +321,10 @@ static auto save_register (const CONTEXT* p_context, THREADID thread_id) -> void
     if (((state_of_thread[thread_id] == ENABLED) && !current_ins->is_special) ||
         ((state_of_thread[thread_id] == SELECTIVE_SUSPENDED) && current_ins->is_syscall)) {
 
-//      auto ins_addr = std::get<INS_ADDRESS>(ins_at_thread[thread_id]);
-
-//      const auto & current_ins = cached_ins_at_addr[ins_addr];
       const auto & regs = !read_or_write ? current_ins->src_registers : current_ins->dst_registers;
 
       auto & reg_map = !read_or_write ? std::get<INS_READ_REGS>(ins_at_thread[thread_id]) :
                                         std::get<INS_WRITE_REGS>(ins_at_thread[thread_id]);
-
-//      tfm::printfln("%s : %s %d %d %b", normalize_hex_string(StringFromAddrint(ins_addr)),
-//                    current_ins->disassemble, current_ins->category, current_ins->iclass, read_or_write);
-
-//      assert(!current_ins->is_special);
 
       for (auto const& reg : regs) {
         static PIN_REGISTER reg_value;
@@ -348,8 +333,6 @@ static auto save_register (const CONTEXT* p_context, THREADID thread_id) -> void
       }
     }
   }
-
-//  tfm::printfln("end save reg");
 
   return;
 }
@@ -386,28 +369,27 @@ static auto save_memory (ADDRINT mem_addr, UINT32 mem_size, THREADID thread_id) 
                                                 std::get<INS_WRITE_MEMS>(ins_at_thread[thread_id]);
 
       if (mem_size != 0) {
-        assert((mem_size == 1) || (mem_size == 2) || (mem_size == 4) || (mem_size == 8));
-        assert(mem_addr != 0);
+        ASSERTX((mem_size == 1) || (mem_size == 2) || (mem_size == 4) || (mem_size == 8));
+        ASSERTX(mem_addr != 0);
 
         if (read_or_write == READ) save_memory_size[mem_size](mem_map, mem_addr);
         else mem_map[dyn_mem_t(mem_addr, mem_size)] = 0;
       }
       else { // save_memory is called with mem_size == 0
-        assert((mem_map.size() == 1) || (mem_map.size() == 0));
-        assert(mem_addr == 0);
+        ASSERTX((mem_map.size() == 1) || (mem_map.size() == 0));
+        ASSERTX(mem_addr == 0);
 
         if (mem_map.size() == 1) {
-          assert(cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_memory_write);
+          ASSERTX(cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_memory_write);
 
           auto stored_mem      = std::begin(mem_map);
           auto mem_addr_size   = std::get<0>(*stored_mem);
           auto mem_addr        = std::get<0>(mem_addr_size);
           auto stored_mem_size = std::get<1>(mem_addr_size);
 
-          assert((stored_mem_size == 1) || (stored_mem_size == 2) ||
-                 (stored_mem_size == 4) || (stored_mem_size == 8));
+          ASSERTX((stored_mem_size == 1) || (stored_mem_size == 2) || (stored_mem_size == 4) || (stored_mem_size == 8));
 
-          assert(mem_map[dyn_mem_t(mem_addr, stored_mem_size)] == 0);
+          ASSERTX(mem_map[dyn_mem_t(mem_addr, stored_mem_size)] == 0);
 
           save_memory_size[stored_mem_size](mem_map, mem_addr);
         }
@@ -445,7 +427,7 @@ static auto save_call_concrete_info (ADDRINT called_addr, THREADID thread_id) ->
   };
 
   if (ins_at_thread.find(thread_id) != ins_at_thread.end()) {
-    assert(cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_call);
+    ASSERTX(cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_call);
 
     if (state_of_thread[thread_id] == ENABLED) {
       auto call_info = call_info_t{};
@@ -488,7 +470,7 @@ static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
 
       std::get<INS_NEXT_ADDRESS>(ins_at_thread[thread_id]) = ins_addr;
       trace.push_back(ins_at_thread[thread_id]);
-      if (trace.size() >= 10000) cap_flush_trace();
+      if (trace.size() >= 10) cap_flush_trace();
 
 //      if (cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_syscall) {
 //        tfm::printfln("%d:%s:%s", thread_id,
@@ -505,8 +487,6 @@ static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
 
 static auto remove_previous_instruction (THREADID thread_id) -> void
 {
-//  tfm::printfln("%s", __FUNCTION__);
-
   if (ins_at_thread.find(thread_id) != ins_at_thread.end()) {
 //    tfm::printfln("remove instruction at thread %d", thread_id);
     ins_at_thread.erase(thread_id);
@@ -549,7 +529,7 @@ static auto patch_register (ADDRINT ins_addr, bool patch_point,
                             UINT32 patch_reg, PIN_REGISTER* p_register,
                             THREADID thread_id) -> void
 {
-  assert(REG_valid(static_cast<REG>(patch_reg)) && "the needed to patch register is invalid");
+  ASSERTX(REG_valid(static_cast<REG>(patch_reg)) && "the needed to patch register is invalid");
 
   static auto patch_reg_funs = std::map<
       uint8_t, std::function<void(ADDRINT, uint8_t, uint8_t, PIN_REGISTER*)>
@@ -569,7 +549,7 @@ static auto patch_register (ADDRINT ins_addr, bool patch_point,
     auto found_patch_point = std::get<1>(patch_exec_point);
     auto found_patch_reg = std::get<0>(patch_reg_value);
 
-    assert(REG_valid(found_patch_reg) && "the needed to patch register is invalid");
+    ASSERTX(REG_valid(found_patch_reg));
 
     if ((exec_addr == ins_addr) && (exec_order == execution_order_of_address[ins_addr]) &&
         (found_patch_point == patch_point) && (found_patch_reg == patch_reg)) {
@@ -642,7 +622,7 @@ static auto save_before_handling (INS ins) -> void
                 >::value, "invalid callback function type");
 
   auto ins_address = INS_Address(ins);
-  assert(!cached_ins_at_addr[ins_address]->is_special);
+  ASSERTX(!cached_ins_at_addr[ins_address]->is_special);
 
   INS_InsertCall(ins,
                  IPOINT_BEFORE,
@@ -796,7 +776,7 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
              std::begin(full_skip_call_addresses), std::end(full_skip_call_addresses), current_ins->address
              ) != std::end(full_skip_call_addresses))
           ) {
-        assert(current_ins->is_call && "the instruction at the skip address must be a call");
+        ASSERTX(current_ins->is_call && "the instruction at the skip address must be a call");
 
         static_assert(std::is_same<
                       decltype(update_resume_address), VOID (ADDRINT, UINT32)
@@ -1026,8 +1006,7 @@ static auto insert_ins_patch_info_callbacks (INS ins) -> void
 
             auto reg_size = REG_Size(patch_reg);
 
-            assert(((reg_size == 1) || (reg_size == 2) || (reg_size == 4) || (reg_size == 8)) &&
-                   "the needed to patch register has a unsupported length");
+            ASSERTX((reg_size == 1) || (reg_size == 2) || (reg_size == 4) || (reg_size == 8));
 
             if (INS_Valid(ins)) {
 
@@ -1119,7 +1098,7 @@ auto update_syscall_entry_info (dyn_ins_t& instruction) -> void
 }
 
 template<>
-auto update_syscall_entry_info<CAP_SYS_OPEN> (dyn_ins_t& instruction) -> void/*concrete_info_t*/
+auto update_syscall_entry_info<CAP_SYS_OPEN> (dyn_ins_t& instruction) -> void
 {
   auto syscall_open_info = sys_open_info_t{};
 
@@ -1167,7 +1146,7 @@ auto update_syscall_entry_info<CAP_SYS_READ> (dyn_ins_t& instruction) -> void/*c
 }
 
 template<>
-auto update_syscall_entry_info<CAP_SYS_WRITE> (dyn_ins_t& instruction) -> void/*concrete_info_t*/
+auto update_syscall_entry_info<CAP_SYS_WRITE> (dyn_ins_t& instruction) -> void
 {
   auto syscall_write_info = sys_write_info_t{};
 
@@ -1215,14 +1194,14 @@ static auto save_syscall_entry_info (THREADID thread_id, CONTEXT* p_context, SYS
   if (some_thread_is_started &&
       (some_thread_is_not_suspended || some_thread_is_selective_suspended)) {
 
-    assert(state_of_thread.find(thread_id) != state_of_thread.end());
+    ASSERTX(state_of_thread.find(thread_id) != state_of_thread.end());
 
     if ((state_of_thread[thread_id] == ENABLED) ||
         (state_of_thread[thread_id] == SELECTIVE_SUSPENDED)) {
       auto ins_addr = PIN_GetContextReg(p_context, REG_INST_PTR);
 
-      assert(ins_addr == std::get<INS_ADDRESS>(ins_at_thread[thread_id]));
-      assert(cached_ins_at_addr[ins_addr]->is_syscall);
+      ASSERTX(ins_addr == std::get<INS_ADDRESS>(ins_at_thread[thread_id]));
+      ASSERTX(cached_ins_at_addr[ins_addr]->is_syscall);
 
       std::get<SYSCALL_ID>(current_syscall_info) = PIN_GetSyscallNumber(p_context, syscall_std);
       std::get<SYSCALL_ARG_0>(current_syscall_info) = PIN_GetSyscallArgument(p_context, syscall_std, 0);
@@ -1250,8 +1229,6 @@ static auto save_syscall_entry_info (THREADID thread_id, CONTEXT* p_context, SYS
         update_syscall_entry_info<CAP_SYS_OTHER>(ins_at_thread[thread_id]);
         break;
       }
-
-//      tfm::printfln("IP = %s, thread = %d: entry (end) syscall id %d", StringFromAddrint(ins_addr), thread_id, syscall_id);
     }
   }
 
@@ -1310,7 +1287,7 @@ auto get_syscall_exit_concret_info<CAP_SYS_READ> (dyn_ins_t& instruction) -> voi
 template<>
 auto get_syscall_exit_concret_info<CAP_SYS_WRITE> (dyn_ins_t& instruction) -> void
 {
-  assert(std::get<INS_CONCRETE_INFO>(instruction).which() == 2);
+  ASSERTX(std::get<INS_CONCRETE_INFO>(instruction).which() == 2);
 
   auto & current_ins_sys_write = boost::get<sys_write_info_t>(std::get<INS_CONCRETE_INFO>(instruction));
 
@@ -1323,7 +1300,7 @@ auto get_syscall_exit_concret_info<CAP_SYS_WRITE> (dyn_ins_t& instruction) -> vo
 template<>
 auto get_syscall_exit_concret_info<CAP_SYS_OTHER> (dyn_ins_t& instruction) -> void
 {
-  assert(std::get<INS_CONCRETE_INFO>(instruction).which() == 3);
+  ASSERTX(std::get<INS_CONCRETE_INFO>(instruction).which() == 3);
   return;
 }
 
@@ -1334,17 +1311,17 @@ static auto save_syscall_exit_concret_info (THREADID thread_id,
   if (some_thread_is_started &&
       (some_thread_is_not_suspended || some_thread_is_selective_suspended)) {
 
-    assert(state_of_thread.find(thread_id) != state_of_thread.end());
+    ASSERTX(state_of_thread.find(thread_id) != state_of_thread.end());
 
     if ((state_of_thread[thread_id] == ENABLED) ||
         (state_of_thread[thread_id] == SELECTIVE_SUSPENDED)) {
 
-      assert(cached_ins_at_addr[
-             std::get<INS_ADDRESS>(ins_at_thread[thread_id]
-                                   )]->is_syscall);
+      ASSERTX(cached_ins_at_addr[
+              std::get<INS_ADDRESS>(ins_at_thread[thread_id]
+                                    )]->is_syscall);
 
       auto type_idx = std::get<INS_CONCRETE_INFO>(ins_at_thread[thread_id]).which();
-      assert((type_idx == 0) || (type_idx == 1) || (type_idx == 2) || (type_idx == 3));
+      ASSERTX((type_idx == 0) || (type_idx == 1) || (type_idx == 2) || (type_idx == 3));
 
       // get return value
       std::get<SYSCALL_RET>(current_syscall_info) = PIN_GetSyscallReturn(p_context, syscall_std);
