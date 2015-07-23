@@ -34,6 +34,14 @@ set(SOURCES
   src/lib/type/instruction.cpp
   src/lib/type/trace.pb.cc)
 
+set(FAST_DEFS "")
+if(DEFINED FAST)
+set(FAST_DEFS "/D FAST_TRACING")
+message(STATUS "Fast tracing is enabled")
+else()
+message(STATUS "Fast tracing is disabled")
+endif()
+
 # ========================================= start host configuration
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -83,6 +91,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   add_definitions(${PIN_DEFS})
   add_definitions(${LINKER_DEFS})
   add_definitions(${PROTOBUF_DEFS})
+  add_definitions(${FAST_DEFS})
 #  add_definitions(${FUNC_DEFS})
 
   set(CMAKE_CXX_FLAGS "${FUNC_DEFS} ${OTHER_DEFS} ${PIN_DEFS}")

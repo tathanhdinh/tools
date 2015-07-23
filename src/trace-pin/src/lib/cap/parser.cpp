@@ -500,6 +500,10 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
     return;
   };
 
+#if defined(FAST_TRACING)
+  auto concrete_info = p_instruction->add_concrete_info();
+  concrete_info->set_typeid_(trace_format::NOT_RETRIEVED);
+#else
   if (p_static_ins->is_special) {
     auto concrete_info = p_instruction->add_concrete_info();
     concrete_info->set_typeid_(trace_format::NOT_RETRIEVED);
@@ -542,6 +546,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
       break;
     }
   }
+#endif
 
   return;
 }
@@ -557,7 +562,7 @@ auto convert_trace_to_byte_segments (trace_format::trace_t& captured_trace, uint
 auto flush_trace_in_protobuf_format () -> void
 {
   if (!trace.empty()) {
-    tfm::printfln("flush %d instructions", trace.size());
+//    tfm::printfln("flush %d instructions", trace.size());
 
     trace_length += trace.size();
 
@@ -574,7 +579,7 @@ auto flush_trace_in_protobuf_format () -> void
     protobuf_trace_file.write(reinterpret_cast<const char*>(&chunk_size), sizeof(decltype(chunk_size)));
     protobuf_trace_file.write(chunk_buffer.get(), chunk_size);
 
-    tfm::printfln("saved chunk size: %d bytes", chunk_size);
+//    tfm::printfln("saved chunk size: %d bytes", chunk_size);
 
 //    tfm::printfln("saved chunk size: %d", chunk_size);
 

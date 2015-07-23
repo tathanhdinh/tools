@@ -470,7 +470,7 @@ static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
 
       std::get<INS_NEXT_ADDRESS>(ins_at_thread[thread_id]) = ins_addr;
       trace.push_back(ins_at_thread[thread_id]);
-      if (trace.size() >= 1000) cap_flush_trace();
+      if (trace.size() >= 10000) cap_flush_trace();
 
 //      if (cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_syscall) {
 //        tfm::printfln("%d:%s:%s", thread_id,
@@ -845,6 +845,8 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                      IARG_THREAD_ID,                                    // thread id
                      IARG_END);
 
+#if defined(FAST_TRACING)
+#else
       if (current_ins->is_call) {
 
         static_assert(std::is_same<
@@ -906,6 +908,7 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                        IARG_THREAD_ID,                                  // thread id
                        IARG_END);
       }
+#endif
     }
   }
   else { // !some_thread_is_started
