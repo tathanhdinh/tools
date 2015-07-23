@@ -7,7 +7,7 @@
 #include <memory>
 #include <fstream>
 
-dyn_inss_t trace                             = dyn_inss_t();
+//dyn_inss_t trace                             = dyn_inss_t();
 map_address_instruction_t cached_ins_at_addr = map_address_instruction_t();
 
 std::ifstream protobuf_trace_file;
@@ -69,7 +69,7 @@ static auto parse_trace_chunks () -> void
 
     parse_chunk_from_buffer(chunk_buffer.get(), chunk_size);
   }
-  catch (uint8_t expt_code) {
+  catch (uint32_t expt_code) {
     tfm::printfln("parsing message failed, error code %d\n", expt_code);
     std::exit(1);
   }
@@ -78,6 +78,37 @@ static auto parse_trace_chunks () -> void
   }
 
   google::protobuf::ShutdownProtobufLibrary();
+
+  return;
+}
+
+
+/* ===================================== exported functions ===================================== */
+
+auto normalize_hex_string (const std::string& input) -> std::string
+{
+  assert(input.find("0x") == 0);
+  auto first_non_zero_iter = std::find_if(std::begin(input) + 2, std::end(input), [](char c) { return (c != '0');});
+  auto output = first_non_zero_iter != std::end(input) ? std::string(first_non_zero_iter, std::end(input)) : std::string("0");
+  return ("0x" + output);
+}
+
+auto print_instructions_parsed_from_file (const std::string& filename) -> void
+{
+  try {
+    protobuf_trace_file = std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary);
+
+    xed_tables_init();
+    parse_trace_header();
+    parse_trace_chunks();
+
+    for (const auto& addr_inst : cached_ins_at_addr) {
+      tfm::printfln("%-17s %s", normalize_hex_string(StringFromAddrint(std::get<0>(addr_inst))), std::get<1>(addr_inst)->disassemble);
+    }
+  }
+  catch (const std::exception& expt) {
+    tfm::printfln("catched exception %s", expt.what());
+  }
 
   return;
 }

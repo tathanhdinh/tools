@@ -1,5 +1,7 @@
 #include "instruction.h"
 
+#include <algorithm>
+
 static char disasm_buffer[100];
 
 instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode_buffer_size)
@@ -8,13 +10,15 @@ instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode
 
   auto xed_inst = xed_decoded_inst_t{};
   xed_decoded_inst_zero(&xed_inst);
-  xed_decoded_inst_set_mode(&xed_inst, instruction::machine_mode, instruction::address_with);
+  xed_decoded_inst_set_mode(&xed_inst, XED_MACHINE_MODE_LEGACY_32, XED_ADDRESS_WIDTH_32b);
 
   auto decode_err = xed_decode(&xed_inst, XED_STATIC_CAST(const xed_uint8_t*, opcode_buffer), opcode_buffer_size);
-  if (decode_err != XED_ERROR_NONE) throw decode_err;
+  if (decode_err != XED_ERROR_NONE) throw static_cast<uint32_t>(decode_err);
 
-  auto disasm_err = xed_format_intel(&xed_inst, disasm_buffer, 100, ins_addr);
-  if (disasm_err != 0) throw disasm_err;
+  std::fill_n(disasm_buffer, 100, 0);
+//  xed_decoded_inst_dump_xed_format(&xed_inst, disasm_buffer, 100, ins_addr);
+  auto disasm_err = xed_format_context(XED_SYNTAX_INTEL, &xed_inst, disasm_buffer, 100, ins_addr, 0);
+  if (disasm_err != 0) throw uint32_t{disasm_err};
 
   this->disassemble = std::string(disasm_buffer);
 

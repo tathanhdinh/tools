@@ -15,9 +15,9 @@ extern "C" {
 
 class instruction
 {
-public:
-  static xed_machine_mode_enum_t machine_mode;
-  static xed_address_width_enum_t address_with;
+//public:
+//  static const xed_machine_mode_enum_t machine_mode = XED_MACHINE_MODE_LEGACY_32;
+//  static const xed_address_width_enum_t address_with = XED_ADDRESS_WIDTH_32b;
 
  public:
   ADDRINT     address;
