@@ -470,7 +470,7 @@ static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
 
       std::get<INS_NEXT_ADDRESS>(ins_at_thread[thread_id]) = ins_addr;
       trace.push_back(ins_at_thread[thread_id]);
-      if (trace.size() >= 10) cap_flush_trace();
+      if (trace.size() >= 1000) cap_flush_trace();
 
 //      if (cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_syscall) {
 //        tfm::printfln("%d:%s:%s", thread_id,

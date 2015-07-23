@@ -16,10 +16,11 @@ static auto parse_trace_header () -> void
 {
   auto header_size = int{0};
   protobuf_trace_file.read(reinterpret_cast<char*>(&header_size), sizeof(decltype(header_size)));
-  if (!protobuf_trace_file) throw uint32_t{1};
+  if (!protobuf_trace_file) throw std::range_error("reading header size error");
 
   auto header_buffer = std::shared_ptr<char>(new char[header_size], std::default_delete<char[]>());
   protobuf_trace_file.read(header_buffer.get(), header_size);
+  if (!protobuf_trace_file) throw std::range_error("reading header error");
 
   return;
 }
@@ -28,10 +29,9 @@ static auto inst_chunk = trace_format::chunk_t();
 static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> void
 {
 //  auto inst_chunk = trace_format::chunk_t();
-  if (!inst_chunk.ParseFromArray(buffer, buffer_size)) throw uint32_t{2};
+  if (!inst_chunk.ParseFromArray(buffer, buffer_size)) throw std::domain_error("parsing chunk error");
 
-  tfm::printfln("number of instructions in chunk: %d", inst_chunk.body_size());
-
+//  tfm::printfln("number of instructions in chunk: %d", inst_chunk.body_size());
   auto body_num = inst_chunk.body_size();
   for (auto i = 0; i < body_num; ++i) {
     const auto& body = inst_chunk.body(i);
@@ -49,6 +49,8 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
 
         cached_ins_at_addr[ins_addr] = std::make_shared<instruction>(ins_addr, opcode_buffer, opcode_size);
       }
+
+      trace.push_back(cached_ins_at_addr[ins_addr]);
 
 //      const auto& con_info_num = pb_inst_info.concrete_info_size();
 //      for (auto idx = 0; idx < con_info_num; ++idx) {
@@ -72,57 +74,22 @@ static auto parse_trace_chunks () -> void
 {
   auto chunk_size = int{0};
 
-  try {
-    while (true) {
-      protobuf_trace_file.read(reinterpret_cast<char*>(&chunk_size), sizeof(decltype(chunk_size)));
-      if (!protobuf_trace_file) throw std::range_error("end of file");
+  while (true) {
+    protobuf_trace_file.read(reinterpret_cast<char*>(&chunk_size), sizeof(decltype(chunk_size)));
+    if (!protobuf_trace_file) throw std::range_error("reading chunk size error");
 
-      auto chunk_buffer = std::shared_ptr<char>(new char[chunk_size], std::default_delete<char[]>());
-      protobuf_trace_file.read(chunk_buffer.get(), chunk_size);
+    auto chunk_buffer = std::shared_ptr<char>(new char[chunk_size], std::default_delete<char[]>());
+    protobuf_trace_file.read(chunk_buffer.get(), chunk_size);
 
-      tfm::printfln("chunk size: %d bytes", chunk_size);
-
-      parse_chunk_from_buffer(chunk_buffer.get(), chunk_size);
-    }
+//    tfm::printfln("chunk size: %d bytes", chunk_size);
+    parse_chunk_from_buffer(chunk_buffer.get(), chunk_size);
   }
-  catch (const std::exception& expt) {
-    tfm::printfln("%s", expt.what());
-  }
-
-//  tfm::printfln("release protobuf");
-//  google::protobuf::ShutdownProtobufLibrary();
 
   return;
 }
 
 
 /* ===================================== exported functions ===================================== */
-
-//auto normalize_hex_string (const std::string& input) -> std::string
-//{
-//  assert(input.find("0x") == 0);
-//  auto first_non_zero_iter = std::find_if(std::begin(input) + 2, std::end(input), [](char c) { return (c != '0');});
-//  auto output = first_non_zero_iter != std::end(input) ? std::string(first_non_zero_iter, std::end(input)) : std::string("0");
-//  return ("0x" + output);
-//}
-
-auto parse_instructions_from_file (const std::string& filename) -> void
-{
-  try {
-    protobuf_trace_file = std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary);
-
-    xed_tables_init();
-
-    parse_trace_header();
-    parse_trace_chunks();
-  }
-  catch (const std::exception& expt) {
-    tfm::printfln("exception: %s", expt.what());
-  }
-
-  google::protobuf::ShutdownProtobufLibrary();
-  protobuf_trace_file.close();
-}
 
 auto print_instructions_parsed_from_file (const std::string& filename) -> void
 {
@@ -139,7 +106,7 @@ auto print_instructions_parsed_from_file (const std::string& filename) -> void
     }
   }
   catch (const std::exception& expt) {
-    tfm::printfln("exception: %s", expt.what());
+    tfm::printfln("%s", expt.what());
   }
 
   google::protobuf::ShutdownProtobufLibrary();
@@ -147,3 +114,26 @@ auto print_instructions_parsed_from_file (const std::string& filename) -> void
 
   return;
 }
+
+auto parse_instructions_from_file (const std::string& filename) -> void
+{
+  try {
+    tfm::printfln("===== reading protobuf trace (input file: %s)...", filename);
+    protobuf_trace_file = std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary);
+
+    xed_tables_init();
+
+    parse_trace_header();
+    parse_trace_chunks();
+  }
+  catch (const std::exception& expt) {
+//    tfm::printfln("exception: %s", expt.what());
+    tfm::printfln("%s instruction parsed", trace.size());
+  }
+
+  google::protobuf::ShutdownProtobufLibrary();
+  protobuf_trace_file.close();
+}
+
+
+

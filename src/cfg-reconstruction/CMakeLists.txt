@@ -63,10 +63,12 @@ set(CMAKE_SHARED_LINKER_FLAGS "/EXPORT:main /NODEFAULTLIB /MACHINE:x86")
 
 set(SRC_LIST
   src/type/trace.pb.cc
+  src/type/trace.pb.h
   src/type/instruction.cpp
 #  src/type/operand.cpp
   src/graph/graph.cpp
   src/loader/loader.cpp
+  src/export.h
   src/main.cpp
 )
 

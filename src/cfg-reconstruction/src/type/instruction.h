@@ -25,7 +25,7 @@ class instruction
   uint32_t    next_address;
   std::string disassemble;
 
-  bool has_fall_through;
+//  bool has_fall_through;
 
   bool is_call;
   bool is_branch;

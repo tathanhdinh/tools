@@ -3,8 +3,8 @@
 
 #include <string>
 
-auto normalize_hex_string (const std::string& input) -> std::string;
-auto print_instructions_parsed_from_file (const std::string& filename) -> void;
+auto parse_instructions_from_file         (const std::string& filename) -> void;
+auto cap_save_basic_block_cfg_to_dot_file (const std::string& filename) -> void;
 
 #endif // EXPORT_H
 

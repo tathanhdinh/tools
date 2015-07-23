@@ -51,17 +51,17 @@ const static auto option_default_filename = std::string    ("9bcbb99f-0eb6-4d28-
 KNOB<string> option_file                                   (KNOB_MODE_WRITEONCE, "pintool", "opt",
                                                             "9bcbb99f-0eb6-4d28-a876-dea762f5021d", "option file, for parameter");
 
-const static auto trace_dot_default_filename = std::string ("c33553b1-57ab-4922-99dc-515eb50e5f51");
-KNOB<string> trace_dot_file                                (KNOB_MODE_WRITEONCE, "pintool", "dot",
-                                                            "c33553b1-57ab-4922-99dc-515eb50e5f51", "output dot file, for trace");
+//const static auto trace_dot_default_filename = std::string ("c33553b1-57ab-4922-99dc-515eb50e5f51");
+//KNOB<string> trace_dot_file                                (KNOB_MODE_WRITEONCE, "pintool", "dot",
+//                                                            "c33553b1-57ab-4922-99dc-515eb50e5f51", "output dot file, for trace");
 
-const static auto cfg_dot_default_filename = std::string   ("793ded05-53e4-49d2-9d77-faa7f48a4217");
-KNOB<string> cfg_dot_file                                  (KNOB_MODE_WRITEONCE, "pintool", "dot-bb",
-                                                            "793ded05-53e4-49d2-9d77-faa7f48a4217", "output file, for basic block graph");
+//const static auto cfg_dot_default_filename = std::string   ("793ded05-53e4-49d2-9d77-faa7f48a4217");
+//KNOB<string> cfg_dot_file                                  (KNOB_MODE_WRITEONCE, "pintool", "dot-bb",
+//                                                            "793ded05-53e4-49d2-9d77-faa7f48a4217", "output file, for basic block graph");
 
-const static auto trace_bb_default_filename = std::string  ("0acc4fd8-acca-418c-9384-d0dd60ac85c9");
-KNOB<string> trace_bb_file                                 (KNOB_MODE_WRITEONCE, "pintool", "trace-bb",
-                                                            "0acc4fd8-acca-418c-9384-d0dd60ac85c9", "output file, for basic block trace");
+//const static auto trace_bb_default_filename = std::string  ("0acc4fd8-acca-418c-9384-d0dd60ac85c9");
+//KNOB<string> trace_bb_file                                 (KNOB_MODE_WRITEONCE, "pintool", "trace-bb",
+//                                                            "0acc4fd8-acca-418c-9384-d0dd60ac85c9", "output file, for basic block trace");
 
 /*====================================================================================================================*/
 /*                                                     support functions                                              */

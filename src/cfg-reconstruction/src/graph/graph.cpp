@@ -108,15 +108,6 @@ static bb_graph_t internal_bb_graph;
 static bbs_graph_t internal_bbs_graph;
 static bbss_graph_t internal_bbss_graph;
 
-//auto normalize_hex_string (const std::string& input) -> std::string
-//{
-//  assert(input.find("0x") == 0);
-//  auto first_non_zero_iter = std::find_if(std::begin(input) + 2, std::end(input), [](char c) { return (c != '0');});
-//  auto output = first_non_zero_iter != std::end(input) ? std::string(first_non_zero_iter, std::end(input)) : std::string("0");
-//  return ("0x" + output);
-//}
-
-
 static auto find_vertex (tr_vertex_t vertex_value) -> tr_vertex_iter_t 
 {
   auto first_vertex_iter = tr_vertex_iter_t();
@@ -204,7 +195,8 @@ static auto is_pivot_vertex (bb_vertex_desc_t vertex_desc) -> bool
 
       auto next_vertex = boost::target(*out_edge_iter, internal_bb_graph);
 
-      if ((boost::in_degree(next_vertex, internal_bb_graph) == 1) && !is_loopback_vertex(next_vertex) && !is_first_bb(next_vertex)) {
+      if ((boost::in_degree(next_vertex, internal_bb_graph) == 1) &&
+          !is_loopback_vertex(next_vertex) && !is_first_bb(next_vertex)) {
 
         if ((in_degree == 0) || (in_degree >= 2)) { // pivot found
           return true;
@@ -419,7 +411,7 @@ static auto construct_bb_graph () -> void
 //      }
 //    }
 
-  tfm::printfln("initializing basic block graph from virtual traces...");
+  tfm::printfln("initializing basic block graph from collected traces...");
   auto prev_bb_desc = bb_graph_t::null_vertex();
   for (const auto& inst : trace) {
     auto ins_addr = inst->address;
@@ -627,7 +619,8 @@ static auto find_pivot_bbss_vertex () -> bbss_vertex_desc_t
 
         auto next_vertex = boost::target(*out_edge_iter, internal_bbss_graph);
 
-        if ((boost::in_degree(next_vertex, internal_bbss_graph) == 1) && !is_loopback_bbss(next_vertex) && !is_first_bbss(next_vertex)) {
+        if ((boost::in_degree(next_vertex, internal_bbss_graph) == 1) &&
+            !is_loopback_bbss(next_vertex) && !is_first_bbss(next_vertex)) {
           if ((in_degree == 0) || (in_degree >= 2)) {
             return true;
           }
@@ -709,8 +702,11 @@ static auto construct_bbss_graph () -> void
   auto last_bbss_vertex_iter = bbss_vertex_iter_t();
 
   std::tie(first_bbss_vertex_iter, last_bbss_vertex_iter) = boost::vertices(internal_bbss_graph);
-  for (auto src_bbss_vertex_iter = first_bbss_vertex_iter; src_bbss_vertex_iter != last_bbss_vertex_iter; ++src_bbss_vertex_iter) {
-    for (auto dst_bbss_vertex_iter = first_bbss_vertex_iter; dst_bbss_vertex_iter != last_bbss_vertex_iter; ++dst_bbss_vertex_iter) {
+  for (auto src_bbss_vertex_iter = first_bbss_vertex_iter;
+       src_bbss_vertex_iter != last_bbss_vertex_iter; ++src_bbss_vertex_iter) {
+    for (auto dst_bbss_vertex_iter = first_bbss_vertex_iter;
+         dst_bbss_vertex_iter != last_bbss_vertex_iter; ++dst_bbss_vertex_iter) {
+
       auto src_bbs_vertex_desc = corresponding_bbs_vertex(*src_bbss_vertex_iter);
       auto dst_bbs_vertex_desc = corresponding_bbs_vertex(*dst_bbss_vertex_iter);
 
@@ -830,6 +826,7 @@ static auto write_cfg_edge (std::ostream& label, bb_edge_desc_t edge_desc) -> vo
   return;
 }
 
+/* ===================================== exported functions ===================================== */
 
 auto cap_save_basic_block_cfg_to_dot_file (const std::string& filename) -> void
 {
@@ -838,7 +835,7 @@ auto cap_save_basic_block_cfg_to_dot_file (const std::string& filename) -> void
 //    if (boost::num_vertices(internal_graph) == 0) construct_graph_from_trace();
 //    if (boost::num_vertices(internal_graph) == 0) throw 2;
 
-    tfm::printfln("constructing basic block graph...");
+    tfm::printfln("===== constructing basic block graph (output file %s)...", filename);
 
     construct_bb_graph();
     if (boost::num_vertices(internal_bb_graph) == 0) throw 3;
@@ -848,7 +845,7 @@ auto cap_save_basic_block_cfg_to_dot_file (const std::string& filename) -> void
 
     tfm::printfln("\nsaving basic block graph...");
     boost::write_graphviz(output_file, internal_bb_graph,
-                          std::bind(write_cfg_vertex, std::placeholders::_1, std::placeholders::_2),
+                          std::bind(write_cfg_thumbnail_vertex, std::placeholders::_1, std::placeholders::_2),
                           std::bind(write_cfg_edge, std::placeholders::_1, std::placeholders::_2));
     output_file.close();
   }
