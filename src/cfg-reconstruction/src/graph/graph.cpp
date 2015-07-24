@@ -100,7 +100,7 @@ using bbss_edge_desc_t = bbss_graph_t::edge_descriptor;
 using bbss_vertex_iter_t = bbss_graph_t::vertex_iterator;
 using bbss_edge_iter_t = bbss_graph_t::edge_iterator;
 
-extern p_instructions_t trace;
+//extern p_instructions_t trace;
 extern map_address_instruction_t cached_ins_at_addr;
 
 static tr_graph_t internal_graph;
@@ -123,7 +123,7 @@ static auto find_vertex (tr_vertex_t vertex_value) -> tr_vertex_iter_t
   return found_vertex_iter;
 }
 
-auto construct_graph_from_trace () -> void
+auto construct_graph_from_trace (const p_instructions_t& trace) -> void
 {
   /*auto find_vertex = [](tr_vertex_t vertex_value) -> tr_vertex_iter_t {
     auto first_vertex_iter = tr_vertex_iter_t();
@@ -180,7 +180,8 @@ auto is_loopback_vertex(bb_vertex_desc_t vertex) -> bool
 
 static auto is_first_bb (bb_vertex_desc_t vertex_desc) -> bool
 {
-  return (std::get<BB_ADDRESSES>(internal_bb_graph[vertex_desc]).front() == trace.front()->address);
+//  return (std::get<BB_ADDRESSES>(internal_bb_graph[vertex_desc]).front() == trace.front()->address);
+  return (root_bb_desc == vertex_desc);
 }
 
 
@@ -384,95 +385,10 @@ static auto get_bb_vertex_desc (tr_vertex_t addr) -> bb_vertex_desc_t
 }
 
 
-auto add_trace_into_bb_graph (const p_instructions_t& trace) -> void
-{
-  try {
-    if (trace.empty()) throw 0;
-
-    if (boost::num_vertices(internal_bb_graph) == 0) {
-      auto ins_addr = trace.front()->address;
-      root_bb_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
-    }
-
-    if (internal_bb_graph[root_bb_desc].second.front() != trace.front()->address) throw 1;
-
-    auto prev_bb_desc = bb_graph_t::null_vertex();
-    for (const auto& inst : trace) {
-      auto ins_addr = inst->address;
-
-      auto curr_bb_desc = get_bb_vertex_desc(ins_addr);
-      if (curr_bb_desc == bb_graph_t::null_vertex()) {
-        curr_bb_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
-      }
-
-      if (prev_bb_desc != bb_graph_t::null_vertex()) {
-        if (!std::get<1>(boost::edge(prev_bb_desc, curr_bb_desc, internal_bb_graph))) {
-          boost::add_edge(prev_bb_desc, curr_bb_desc, internal_bb_graph);
-        }
-      }
-
-      prev_bb_desc = curr_bb_desc;
-    }
-  }
-  catch (uint32_t excpt_code) {
-    switch (excpt_code) {
-      case 0: break;
-      case 1: {
-        tfm::printfln("fatal error: the first instruction is obscure");
-        std::terminate();
-      }
-      default: break;
-    }
-  }
-
-  return;
-}
 
 
-static auto construct_bb_graph () -> void
-{
-  tfm::printfln("initializing basic block graph from collected traces...");
-  auto prev_bb_desc = bb_graph_t::null_vertex();
-  for (const auto& inst : trace) {
-    auto ins_addr = inst->address;
 
-    auto curr_bb_desc = get_bb_vertex_desc(ins_addr);
-    if (curr_bb_desc == bb_graph_t::null_vertex()) {
-      curr_bb_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
-    }
-
-    if (prev_bb_desc != bb_graph_t::null_vertex()) {
-      if (!std::get<1>(boost::edge(prev_bb_desc, curr_bb_desc, internal_bb_graph))) {
-        boost::add_edge(prev_bb_desc, curr_bb_desc, internal_bb_graph);
-      }
-    }
-
-    prev_bb_desc = curr_bb_desc;
-  }
-
-  tfm::printfln("compressing basic block graph...");
-  boost::progress_display compress_progress(boost::num_vertices(internal_bb_graph));
-  auto pivot_vertex_desc = bb_graph_t::null_vertex();
-  do {
-//    tfm::printfln("number of vertices: %d", boost::num_vertices(internal_bb_graph));
-    ++compress_progress;
-    if ((pivot_vertex_desc == bb_graph_t::null_vertex()) || !is_pivot_vertex(pivot_vertex_desc))
-      pivot_vertex_desc = find_pivot_vertex();
-
-    if (pivot_vertex_desc != bb_graph_t::null_vertex()) {
-      pivot_vertex_desc = compress_graph_from_pivot_vertex(pivot_vertex_desc);
-    }
-    else break;
-  }
-  while (true);
-
-  numbering_bb_graph();
-
-  return;
-}
-
-
-auto construct_bb_trace () -> std::vector<bb_vertex_desc_t>
+auto construct_bb_trace (const p_instructions_t& trace) -> std::vector<bb_vertex_desc_t>
 {
   auto bb_trace = std::vector<bb_vertex_desc_t>{};
 
@@ -750,11 +666,7 @@ static auto construct_bbss_graph () -> void
 }
 
 
-/*====================================================================================================================*/
-/*                                                     exported functions                                             */
-/*====================================================================================================================*/
-
-auto cap_save_trace_to_dot_file (const std::string& filename) -> void
+auto cap_save_trace_to_dot_file (const p_instructions_t& trace, const std::string& filename) -> void
 {
   auto write_vertex = [](std::ostream& label, tr_vertex_desc_t vertex_desc) -> void {
     tfm::format(label, "[label=\"0x%x:%s\"]", internal_graph[vertex_desc],
@@ -768,7 +680,7 @@ auto cap_save_trace_to_dot_file (const std::string& filename) -> void
   };
 
   if (trace.size() > 0) {
-    construct_graph_from_trace();
+    construct_graph_from_trace(trace);
 
     std::ofstream output_file(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
     if (output_file.is_open()) {
@@ -848,172 +760,82 @@ static auto write_cfg_edge (std::ostream& label, bb_edge_desc_t edge_desc) -> vo
 
 /* ===================================== exported functions ===================================== */
 
-auto cap_save_basic_block_cfg_to_dot_file (const std::string& filename) -> void
+auto add_trace_into_basic_block_cfg (const p_instructions_t& trace) -> void
 {
-  try {
-    if (trace.empty()) throw 1;
-//    if (boost::num_vertices(internal_graph) == 0) construct_graph_from_trace();
-//    if (boost::num_vertices(internal_graph) == 0) throw 2;
+  if (trace.empty()) throw 0;
 
-    tfm::printfln("===== constructing basic block graph (output file %s)...", filename);
-
-    construct_bb_graph();
-    if (boost::num_vertices(internal_bb_graph) == 0) throw 3;
-
-    std::ofstream output_file(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
-    if (!output_file.is_open()) throw 4;
-
-    tfm::printfln("\nsaving basic block graph...");
-    boost::write_graphviz(output_file, internal_bb_graph,
-                          std::bind(write_cfg_thumbnail_vertex, std::placeholders::_1, std::placeholders::_2),
-                          std::bind(write_cfg_edge, std::placeholders::_1, std::placeholders::_2));
-    output_file.close();
+  if (boost::num_vertices(internal_bb_graph) == 0) {
+    auto ins_addr = trace.front()->address;
+    root_bb_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
   }
-  catch (int excpt) {
-    switch (excpt) {
-      case 1: tfm::printfln("trace is empty, omit constructing basic block graph"); break;
-      case 2: tfm::printfln("graph is constructed but empty, omit constructing basic block graph"); break;
-      case 3: tfm::printfln("basic block is constructed but empty, omit saving basic block graph"); break;
-      case 4: tfm::printfln("basic block graph is not empty, but cannot open output file"); break;
-      default: break;
+
+  assert(internal_bb_graph[root_bb_desc].second.front() != trace.front()->address);
+
+  auto prev_bb_desc = bb_graph_t::null_vertex();
+  for (const auto& inst : trace) {
+    auto ins_addr = inst->address;
+
+    auto curr_bb_desc = get_bb_vertex_desc(ins_addr);
+    if (curr_bb_desc == bb_graph_t::null_vertex()) {
+      curr_bb_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
     }
+
+    if (prev_bb_desc != bb_graph_t::null_vertex()) {
+      if (!std::get<1>(boost::edge(prev_bb_desc, curr_bb_desc, internal_bb_graph))) {
+        boost::add_edge(prev_bb_desc, curr_bb_desc, internal_bb_graph);
+      }
+    }
+
+    prev_bb_desc = curr_bb_desc;
   }
-
-//  if (boost::num_vertices(internal_graph) > 0) {
-//    construct_bb_graph();
-
-//    ofstream output_file(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
-//    if (output_file.is_open()) {
-//      boost::write_graphviz(output_file, internal_bb_graph,
-//                            std::bind(write_vertex, std::placeholders::_1, std::placeholders::_2),
-//                            std::bind(write_edge, std::placeholders::_1, std::placeholders::_2));
-//      output_file.close();
-//    }
-//    else {
-//      tfm::printfln("cannot save basic block graph to file %s", filename);
-//    }
-//  }
-//  else tfm::printfln("graph is empty, constructing basic block graph is omitted");
 
   return;
 }
 
 
-auto cap_save_basic_block_trace_to_file (const std::string& filename) -> void
+auto construct_basic_block_cfg () -> void
 {
-  auto is_first_bbs = [](bbs_vertex_desc_t vertex_desc) -> bool {
-    auto vertex_value = internal_bbs_graph[vertex_desc];
-    return (vertex_value.size() == 1) && (vertex_value[0] == 0);
-  };
+  boost::progress_display compress_progress(boost::num_vertices(internal_bb_graph));
+  auto pivot_vertex_desc = bb_graph_t::null_vertex();
+  do {
+    ++compress_progress;
+    if ((pivot_vertex_desc == bb_graph_t::null_vertex()) || !is_pivot_vertex(pivot_vertex_desc))
+      pivot_vertex_desc = find_pivot_vertex();
 
-  auto write_vertex = [&](std::ostream& label, bbs_vertex_desc_t vertex_desc) -> void
-  {
-    if (is_first_bbs(vertex_desc)) {
-      tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=cornflowerblue,label=\"");
+    if (pivot_vertex_desc != bb_graph_t::null_vertex()) {
+      pivot_vertex_desc = compress_graph_from_pivot_vertex(pivot_vertex_desc);
     }
-    else if (boost::out_degree(vertex_desc, internal_bbs_graph) == 0) {
-      tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=gainsboro,label=\"");
-    }
-    else if (boost::in_degree(vertex_desc, internal_bbs_graph) > 2) {
-      tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=darkorchid1,label=\"");
-    }
-    else if (boost::out_degree(vertex_desc, internal_bbs_graph) > 2) {
-      tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=darkgoldenrod1,label=\"");
-    }
-    else tfm::format(label, "[shape=box,style=rounded,label=\"");
+    else break;
+  }
+  while (true);
 
-    auto count = uint32_t{0};
-    for (const auto& bb_order : internal_bbs_graph[vertex_desc]) {
-      tfm::format(label, "%d ", bb_order);
-      count++;
-      if (count % 7 == 0) tfm::format(label, "\\l");
-    }
+  numbering_bb_graph();
 
-    tfm::format(label, "\",fontname=\"Inconsolata\",fontsize=10.0]");
-  };
+  return;
+}
 
-  auto write_edge = [](std::ostream& label, bbs_edge_desc_t edge_desc) -> void {
-    tfm::format(label, "[label=\"\"]");
-    return;
-  };
-
-  auto is_first_bbss = [](bbss_vertex_desc_t vertex_desc) -> bool
-  {
-    return ((internal_bbss_graph[vertex_desc].size() == 1) && (internal_bbss_graph[vertex_desc].front().front() == 0));
-  };
-
-  auto write_bbss_vertex = [&](std::ostream& label, bbss_vertex_desc_t vertex_desc) -> void
-  {
-    if (is_first_bbss(vertex_desc)) {
-      tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=cornflowerblue,label=\"");
-    }
-    else if (boost::out_degree(vertex_desc, internal_bbss_graph) == 0) {
-      tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=gainsboro,label=\"");
-    }
-    else if (boost::in_degree(vertex_desc, internal_bbss_graph) > 2) {
-      tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=darkorchid1,label=\"");
-    }
-    else if (boost::out_degree(vertex_desc, internal_bbss_graph) > 2) {
-      tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=darkgoldenrod1,label=\"");
-    }
-    else tfm::format(label, "[shape=box,style=rounded,label=\"");
-
-    for (const auto& bbs_value : internal_bbss_graph[vertex_desc]) {
-//      auto count = uint32_t{0};
-      for (const auto& bb_order : bbs_value) {
-        tfm::format(label, "%d ", bb_order);
-//        count++; if (count % 7 == 0) tfm::format(label, "\\l");
-      }
-      tfm::format(label, "\\l");
-    }
-
-    tfm::format(label, "\",fontname=\"Inconsolata\",fontsize=10.0]");
-  };
-
-  auto write_bbss_edge = [](std::ostream& label, bbss_edge_desc_t edge_desc) -> void
-  {
-    tfm::format(label, "[label=\"\"]");;
-  };
-
+auto save_basic_block_cfg_to_dot_file (const std::string& filename) -> void
+{
   std::ofstream output_file(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
-  if (output_file.is_open()) {
 
-    if (boost::num_vertices(internal_bb_graph) > 0) {
-      auto bb_trace = construct_bb_trace();
+  boost::write_graphviz(output_file, internal_bb_graph,
+                        std::bind(write_cfg_thumbnail_vertex, std::placeholders::_1, std::placeholders::_2),
+                        std::bind(write_cfg_edge, std::placeholders::_1, std::placeholders::_2));
+  output_file.close();
+  return;
+}
 
-//      for (auto & bb_vertex_desc : bb_trace) {
-//        tfm::format(output_file, "%d ", std::get<BB_ORDER>(internal_bb_graph[bb_vertex_desc]));
-//      }
 
-      auto bbs_trace = construct_bbs_trace(bb_trace);
+auto cap_save_basic_block_trace_to_file (const p_instructions_t& trace, const std::string& filename) -> void
+{
+  std::ofstream output_file(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
+  auto bb_trace = construct_bb_trace(trace);
 
-      for (auto & bb_trace : bbs_trace) {
-        for (auto & bb_vertex_desc : bb_trace) {
-          tfm::format(output_file, "%d ", std::get<BB_ORDER>(internal_bb_graph[bb_vertex_desc]));
-        }
-        tfm::format(output_file, "\n");
-      }
-
-//      construct_bbs_graph(bbs_trace);
-
-//      boost::write_graphviz(output_file, internal_bbs_graph,
-//                            std::bind(write_vertex, std::placeholders::_1, std::placeholders::_2),
-//                            std::bind(write_edge, std::placeholders::_1, std::placeholders::_2));
-
-//      construct_bbss_graph();
-
-//      boost::write_graphviz(output_file, internal_bbss_graph,
-//                            std::bind(write_bbss_vertex, std::placeholders::_1, std::placeholders::_2),
-//                            std::bind(write_bbss_edge, std::placeholders::_1, std::placeholders::_2));
-    }
-    else tfm::printfln("basic block graph is empty, constructing basic block trace is omitted");
-//    tfm::format(output_file, "\n");
-
-    output_file.close();
+  for (auto & bb_vertex_desc : bb_trace) {
+    tfm::format(output_file, "%d ", std::get<BB_ORDER>(internal_bb_graph[bb_vertex_desc]));
   }
-  else {
-    tfm::printfln("cannot save bb-trace to file %s", filename);
-  }
+
+  output_file.close();
 
   return;
 }

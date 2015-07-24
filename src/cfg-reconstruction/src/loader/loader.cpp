@@ -7,7 +7,7 @@
 #include <fstream>
 
 //dyn_inss_t trace                             = dyn_inss_t();
-p_instructions_t trace = p_instructions_t{};
+static p_instructions_t trace = p_instructions_t{};
 map_address_instruction_t cached_ins_at_addr = map_address_instruction_t();
 
 static std::ifstream protobuf_trace_file;
@@ -115,8 +115,10 @@ auto print_instructions_parsed_from_file (const std::string& filename) -> void
   return;
 }
 
-auto parse_instructions_from_file (const std::string& filename) -> void
+auto parse_instructions_from_file (const std::string& filename) -> const p_instructions_t&
 {
+  trace.clear();
+
   try {
     tfm::printfln("===== reading protobuf trace (input file: %s)...", filename);
     protobuf_trace_file = std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary);
@@ -127,12 +129,13 @@ auto parse_instructions_from_file (const std::string& filename) -> void
     parse_trace_chunks();
   }
   catch (const std::exception& expt) {
-//    tfm::printfln("exception: %s", expt.what());
     tfm::printfln("%s instruction parsed", trace.size());
   }
 
   google::protobuf::ShutdownProtobufLibrary();
   protobuf_trace_file.close();
+
+  return trace;
 }
 
 
