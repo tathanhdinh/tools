@@ -3,6 +3,9 @@
 
 #include <stdexcept>
 
+#define CFG  true
+#define TREE false
+
 int main(int argc, char* argv[])
 {
   try {
