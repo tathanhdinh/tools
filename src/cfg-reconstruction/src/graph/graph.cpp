@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cinttypes>
 #include <cstdint>
+#include <stdexcept>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/breadth_first_search.hpp>
@@ -104,10 +105,15 @@ using bbss_edge_iter_t = bbss_graph_t::edge_iterator;
 extern map_address_instruction_t cached_ins_at_addr;
 
 static tr_graph_t internal_graph;
-static bb_graph_t internal_bb_graph;
+
 static bbs_graph_t internal_bbs_graph;
 static bbss_graph_t internal_bbss_graph;
-static bb_vertex_desc_t root_bb_desc = bb_graph_t::null_vertex();
+
+static bb_graph_t internal_bb_graph;
+static bb_vertex_desc_t root_bb_graph_desc = bb_graph_t::null_vertex();
+
+static bb_graph_t internal_bb_tree;
+static bb_vertex_desc_t root_bb_tree_desc = bb_graph_t::null_vertex();
 
 static auto find_vertex (tr_vertex_t vertex_value) -> tr_vertex_iter_t 
 {
@@ -181,7 +187,7 @@ auto is_loopback_vertex(bb_vertex_desc_t vertex) -> bool
 static auto is_first_bb (bb_vertex_desc_t vertex_desc) -> bool
 {
 //  return (std::get<BB_ADDRESSES>(internal_bb_graph[vertex_desc]).front() == trace.front()->address);
-  return (root_bb_desc == vertex_desc);
+  return (root_bb_graph_desc == vertex_desc);
 }
 
 
@@ -766,10 +772,11 @@ auto add_trace_into_basic_block_cfg (const p_instructions_t& trace) -> void
 
   if (boost::num_vertices(internal_bb_graph) == 0) {
     auto ins_addr = trace.front()->address;
-    root_bb_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
+    root_bb_graph_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
   }
 
-  assert(internal_bb_graph[root_bb_desc].second.front() != trace.front()->address);
+  if (internal_bb_graph[root_bb_graph_desc].second.front() != trace.front()->address)
+    throw std::logic_error("the first instruction does not match");
 
   auto prev_bb_desc = bb_graph_t::null_vertex();
   for (const auto& inst : trace) {
@@ -826,7 +833,7 @@ auto save_basic_block_cfg_to_dot_file (const std::string& filename) -> void
 }
 
 
-auto cap_save_basic_block_trace_to_file (const p_instructions_t& trace, const std::string& filename) -> void
+auto save_basic_block_trace_to_file (const p_instructions_t& trace, const std::string& filename) -> void
 {
   std::ofstream output_file(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
   auto bb_trace = construct_bb_trace(trace);
@@ -836,6 +843,25 @@ auto cap_save_basic_block_trace_to_file (const p_instructions_t& trace, const st
   }
 
   output_file.close();
+
+  return;
+}
+
+
+auto add_trace_into_basic_block_tree (const p_instructions_t& trace) -> void
+{
+  if (trace.empty()) return;
+
+  if (boost::num_vertices(internal_bb_tree) == 0) {
+    auto ins_addr = trace.front()->address;
+    root_bb_tree_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_tree);
+  }
+
+  if (std::get<1>(internal_bb_tree[root_bb_tree_desc]).front() != trace.front()->address)
+    throw std::logic_error("the first instruction does not match");
+
+  auto inst_iter = std::begin(trace); ++inst_iter;
+  auto last_inst_iter = std::end(trace);
 
   return;
 }

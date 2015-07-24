@@ -6,7 +6,6 @@
 #include <memory>
 #include <fstream>
 
-//dyn_inss_t trace                             = dyn_inss_t();
 static p_instructions_t trace = p_instructions_t{};
 map_address_instruction_t cached_ins_at_addr = map_address_instruction_t();
 
