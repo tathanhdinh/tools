@@ -107,6 +107,7 @@ static tr_graph_t internal_graph;
 static bb_graph_t internal_bb_graph;
 static bbs_graph_t internal_bbs_graph;
 static bbss_graph_t internal_bbss_graph;
+static bb_vertex_desc_t root_bb_desc = bb_graph_t::null_vertex();
 
 static auto find_vertex (tr_vertex_t vertex_value) -> tr_vertex_iter_t 
 {
@@ -383,34 +384,53 @@ static auto get_bb_vertex_desc (tr_vertex_t addr) -> bb_vertex_desc_t
 }
 
 
+auto add_trace_into_bb_graph (const p_instructions_t& trace) -> void
+{
+  try {
+    if (trace.empty()) throw 0;
+
+    if (boost::num_vertices(internal_bb_graph) == 0) {
+      auto ins_addr = trace.front()->address;
+      root_bb_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
+    }
+
+    if (internal_bb_graph[root_bb_desc].second.front() != trace.front()->address) throw 1;
+
+    auto prev_bb_desc = bb_graph_t::null_vertex();
+    for (const auto& inst : trace) {
+      auto ins_addr = inst->address;
+
+      auto curr_bb_desc = get_bb_vertex_desc(ins_addr);
+      if (curr_bb_desc == bb_graph_t::null_vertex()) {
+        curr_bb_desc = boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{ins_addr}), internal_bb_graph);
+      }
+
+      if (prev_bb_desc != bb_graph_t::null_vertex()) {
+        if (!std::get<1>(boost::edge(prev_bb_desc, curr_bb_desc, internal_bb_graph))) {
+          boost::add_edge(prev_bb_desc, curr_bb_desc, internal_bb_graph);
+        }
+      }
+
+      prev_bb_desc = curr_bb_desc;
+    }
+  }
+  catch (uint32_t excpt_code) {
+    switch (excpt_code) {
+      case 0: break;
+      case 1: {
+        tfm::printfln("fatal error: the first instruction is obscure");
+        std::terminate();
+      }
+      default: break;
+    }
+  }
+
+  return;
+}
+
+
 static auto construct_bb_graph () -> void
 {
-//  auto first_vertex_iter = tr_vertex_iter_t();
-//  auto last_vertex_iter = tr_vertex_iter_t();
-
-//  std::tie(first_vertex_iter, last_vertex_iter) = boost::vertices(internal_graph);
-//  for (auto vertex_iter = first_vertex_iter; vertex_iter != last_vertex_iter; ++vertex_iter) {
-//    boost::add_vertex(bb_vertex_t(-1, tr_vertices_t{internal_graph[*vertex_iter]}), internal_bb_graph);
-//  }
-
-//  auto first_bb_vertex_iter = bb_vertex_iter_t();
-//  auto last_bb_vertex_iter = bb_vertex_iter_t();
-
-//  std::tie(first_bb_vertex_iter, last_bb_vertex_iter) = boost::vertices(internal_bb_graph);
-
-//  tfm::printfln("initializing basic block graph...");
-//  for (auto src_bb_vertex_iter = first_bb_vertex_iter; src_bb_vertex_iter != last_bb_vertex_iter; ++src_bb_vertex_iter)
-//    for (auto dst_bb_vertex_iter = first_bb_vertex_iter; dst_bb_vertex_iter != last_bb_vertex_iter; ++dst_bb_vertex_iter) {
-
-//      auto src_tr_vertex_desc = get_tr_vertex_desc(std::get<BB_ADDRESSES>(internal_bb_graph[*src_bb_vertex_iter]).front());
-//      auto dst_tr_vertex_desc = get_tr_vertex_desc(std::get<BB_ADDRESSES>(internal_bb_graph[*dst_bb_vertex_iter]).front());
-
-//      if (std::get<1>(boost::edge(src_tr_vertex_desc, dst_tr_vertex_desc, internal_graph)) &&
-//          !std::get<1>(boost::edge(*src_bb_vertex_iter, *dst_bb_vertex_iter, internal_bb_graph))) {
-//        boost::add_edge(*src_bb_vertex_iter, *dst_bb_vertex_iter, internal_bb_graph);
-//      }
-//    }
-
   tfm::printfln("initializing basic block graph from collected traces...");
   auto prev_bb_desc = bb_graph_t::null_vertex();
   for (const auto& inst : trace) {
