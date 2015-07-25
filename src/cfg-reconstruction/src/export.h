@@ -7,7 +7,6 @@
 
 auto parse_instructions_from_file      (const std::string& filename)   -> const p_instructions_t&;
 
-
 template<bool cfg_or_tree>
 auto construct_basic_block_graph       () -> void;
 auto construct_basic_block_cfg = construct_basic_block_graph<true>;

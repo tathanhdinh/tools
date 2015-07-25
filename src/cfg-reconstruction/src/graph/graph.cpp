@@ -44,29 +44,10 @@ using bb_edge_desc_t = bb_graph_t::edge_descriptor;
 using bb_vertex_iter_t = bb_graph_t::vertex_iterator;
 using bb_edge_iter_t = bb_graph_t::edge_iterator;
 
-using bbs_vertex_t = std::vector<int32_t>;
-using bbs_graph_t = boost::adjacency_list<boost::listS,
-                                          boost::vecS,
-                                          boost::bidirectionalS,
-                                          bbs_vertex_t>;
-using bbs_vertex_desc_t = bbs_graph_t::vertex_descriptor;
-using bbs_edge_desc_t = bbs_graph_t::edge_descriptor;
-using bbs_vertex_iter_t = bb_graph_t::vertex_iterator;
-using bb_edge_iter_t = bb_graph_t::edge_iterator;
-using bbss_vertex_t = std::vector<bbs_vertex_t>;
-using bbss_graph_t = boost::adjacency_list<boost::listS, boost::vecS, boost::bidirectionalS, bbss_vertex_t>;
-using bbss_vertex_desc_t = bbss_graph_t::vertex_descriptor;
-using bbss_edge_desc_t = bbss_graph_t::edge_descriptor;
-using bbss_vertex_iter_t = bbss_graph_t::vertex_iterator;
-using bbss_edge_iter_t = bbss_graph_t::edge_iterator;
-
 //extern p_instructions_t trace;
 extern map_address_instruction_t cached_ins_at_addr;
 
 static tr_graph_t internal_graph;
-
-static bbs_graph_t internal_bbs_graph;
-static bbss_graph_t internal_bbss_graph;
 
 static bb_graph_t internal_bb_cfg;
 static bb_vertex_desc_t root_bb_cfg_desc = bb_graph_t::null_vertex();
@@ -461,21 +442,23 @@ static auto write_graph_vertex (std::ostream& label, bb_vertex_desc_t vertex_des
 template<bool cfg_or_tree>
 static auto write_graph_thumbnail_vertex (std::ostream& label, bb_vertex_desc_t vertex_desc) -> void
 {
+  auto bb_graph = cfg_or_tree ? internal_bb_cfg : internal_bb_tree;
+
   if (is_first_bb<cfg_or_tree>(vertex_desc)) {
       tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=cornflowerblue,label=\"");
   }
-  else if (boost::out_degree(vertex_desc, internal_bb_cfg) == 0) {
+  else if (boost::out_degree(vertex_desc, bb_graph) == 0) {
     tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=gainsboro,label=\"");
   }
-  else if (boost::in_degree(vertex_desc, internal_bb_cfg) > 2) {
+  else if (boost::in_degree(vertex_desc, bb_graph) > 2) {
     tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=darkorchid1,label=\"");
   }
-  else if (boost::out_degree(vertex_desc, internal_bb_cfg) > 2) {
+  else if (boost::out_degree(vertex_desc, bb_graph) > 2) {
     tfm::format(label, "[shape=box,style=\"filled,rounded\",fillcolor=darkgoldenrod1,label=\"");
   }
   else tfm::format(label, "[shape=box,style=rounded,label=\"");
 
-  tfm::format(label, "%d", std::get<BB_ORDER>(internal_bb_cfg[vertex_desc]));
+  tfm::format(label, "%d", std::get<BB_ORDER>(bb_graph[vertex_desc]));
   tfm::format(label, "\",fontname=\"Inconsolata\",fontsize=10.0]");
   return;
 }
@@ -548,9 +531,6 @@ auto construct_basic_block_graph () -> void
 }
 template void construct_basic_block_graph<true>();
 template void construct_basic_block_graph<false>();
-//auto construct_basic_block_cfg = construct_basic_block_graph<true>;
-//auto construct_basic_block_tree = construct_basic_block_graph<false>;
-
 
 template<bool cfg_or_tree>
 auto save_basic_block_graph_to_dot_file (const std::string& filename) -> void
@@ -567,8 +547,6 @@ auto save_basic_block_graph_to_dot_file (const std::string& filename) -> void
 }
 template void save_basic_block_graph_to_dot_file<true>(const std::string& filename);
 template void save_basic_block_graph_to_dot_file<false>(const std::string& filename);
-//auto save_basic_block_cfg_to_dot_file = save_basic_block_graph_to_dot_file<true>;
-//auto save_basic_block_tree_to_dot_file = save_basic_block_graph_to_dot_file<false>;
 
 //auto save_basic_block_trace_to_file (const p_instructions_t& trace, const std::string& filename) -> void
 //{

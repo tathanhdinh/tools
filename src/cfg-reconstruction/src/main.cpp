@@ -2,28 +2,42 @@
 #include "tinyformat.h"
 
 #include <stdexcept>
+#include <cstring>
+#include <ctime>
 
-#define CFG  true
-#define TREE false
 
 int main(int argc, char* argv[])
 {
   try {
-    if (argc < 3)
-      throw std::logic_error("please run as: cfgrecon protobuf_trace_file(s) dot_cfg_file");
+    if (argc < 4) throw std::logic_error("please run as: cfgrecon mode[tree/cfg] protobuf_trace_file(s) dot_cfg_file");
 
-    auto trace_file_num = argc - 2;
-    for (auto idx = 1; idx <= trace_file_num; ++idx) {
+    auto cfg_or_tree = true;
+    if (strcmp(argv[1], "cfg") == 0) cfg_or_tree = true;
+    else if (strcmp(argv[1], "tree") == 0) cfg_or_tree = false;
+    else throw std::logic_error("mode must be tree or cfg");
+
+    auto add_trace_fun = cfg_or_tree ? add_trace_into_basic_block_cfg : add_trace_into_basic_block_tree;
+    auto construct_fun = cfg_or_tree ? construct_basic_block_cfg : construct_basic_block_tree;
+    auto save_to_file_fun = cfg_or_tree ? save_basic_block_cfg_to_dot_file : save_basic_block_tree_to_dot_file;
+
+    auto starting_time = std::clock();
+
+    auto trace_file_max_idx = argc - 1;
+    for (auto idx = 2; idx < trace_file_max_idx; ++idx) {
       auto pb_trace_file = std::string(argv[idx]);
 
       auto trace = parse_instructions_from_file(pb_trace_file);
-      add_trace_into_basic_block_cfg(trace);
+
+      add_trace_fun(trace);
     }
 
-    construct_basic_block_cfg();
+    construct_fun();
 
     auto bb_cfg_file = std::string(argv[argc - 1]);
-    save_basic_block_cfg_to_dot_file(bb_cfg_file);
+    save_to_file_fun(bb_cfg_file);
+
+    auto ending_time = std::clock();
+    tfm::printfln("\nelapsed time: %d secs", (ending_time - starting_time) / CLOCKS_PER_SEC);
   }
   catch (const std::exception& expt) {
     tfm::printfln("%s", expt.what());
