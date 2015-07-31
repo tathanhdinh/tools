@@ -93,7 +93,8 @@ static auto parse_trace_chunks () -> void
 auto print_instructions_parsed_from_file (const std::string& filename) -> void
 {
   try {
-    protobuf_trace_file = std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary);
+//    protobuf_trace_file = std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary);
+    protobuf_trace_file.open(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 
     xed_tables_init();
 
@@ -120,7 +121,8 @@ auto parse_instructions_from_file (const std::string& filename) -> const p_instr
 
   try {
     tfm::printfln("===== reading protobuf trace (input file: %s)...", filename);
-    protobuf_trace_file = std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary);
+//    protobuf_trace_file = std::move(std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary));
+    protobuf_trace_file.open(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 
     xed_tables_init();
 
