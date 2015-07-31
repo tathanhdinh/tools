@@ -123,21 +123,41 @@ auto parse_instructions_from_file (const std::string& filename) -> const p_instr
     tfm::printfln("===== reading protobuf trace (input file: %s)...", filename);
 //    protobuf_trace_file = std::move(std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary));
     protobuf_trace_file.open(filename.c_str(), std::ifstream::in | std::ifstream::binary);
+    if (!protobuf_trace_file) throw std::runtime_error("cannot open file to write");
 
     xed_tables_init();
 
     parse_trace_header();
     parse_trace_chunks();
+
+    protobuf_trace_file.close();
   }
   catch (const std::exception& expt) {
     tfm::printfln("%s instruction parsed", trace.size());
   }
 
   google::protobuf::ShutdownProtobufLibrary();
-  protobuf_trace_file.close();
-
   return trace;
 }
 
 
+auto save_trace_to_file (const std::string& filename) -> void
+{
+  std::ofstream trace_file(filename.c_str(), std::ofstream::trunc);
+
+  try {
+    if (!trace_file) throw std::runtime_error("cannot open file to write");
+
+    for (const auto& inst : trace) {
+      tfm::format(trace_file, "0x%x  %s\n", inst->address, inst->disassemble);
+    }
+
+    trace_file.close();
+  }
+  catch (const std::exception& expt) {
+    tfm::printfln("%s", expt.what());
+  }
+
+  return;
+}
 

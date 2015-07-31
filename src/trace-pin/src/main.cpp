@@ -44,8 +44,8 @@ KNOB<string> input_file                                    (KNOB_MODE_WRITEONCE,
 KNOB<string> output_file                                   (KNOB_MODE_WRITEONCE, "pintool", "out",
                                                             "trace.msg", "output file, for resulted trace");
 
-KNOB<bool> output_trace_format                             (KNOB_MODE_WRITEONCE, "pintool", "format",
-                                                            "true", "output trace format, 1: protobuf, 0: simple");
+//KNOB<bool> output_trace_format                             (KNOB_MODE_WRITEONCE, "pintool", "format",
+//                                                            "true", "output trace format, 1: protobuf, 0: simple");
 
 const static auto option_default_filename = std::string    ("9bcbb99f-0eb6-4d28-a876-dea762f5021d");
 KNOB<string> option_file                                   (KNOB_MODE_WRITEONCE, "pintool", "opt",

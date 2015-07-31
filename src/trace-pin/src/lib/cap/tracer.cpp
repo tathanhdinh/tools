@@ -470,7 +470,7 @@ static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
 
       std::get<INS_NEXT_ADDRESS>(ins_at_thread[thread_id]) = ins_addr;
       trace.push_back(ins_at_thread[thread_id]);
-      if (trace.size() >= 10000) cap_flush_trace();
+      if (trace.size() >= 1000) cap_flush_trace();
 
 //      if (cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_syscall) {
 //        tfm::printfln("%d:%s:%s", thread_id,
@@ -776,7 +776,7 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
              std::begin(full_skip_call_addresses), std::end(full_skip_call_addresses), current_ins->address
              ) != std::end(full_skip_call_addresses))
           ) {
-        ASSERTX(current_ins->is_call && "the instruction at the skip address must be a call");
+        ASSERTX((current_ins->is_call || current_ins->is_branch) && "the instruction at the skip address must be a call");
 
         static_assert(std::is_same<
                       decltype(update_resume_address), VOID (ADDRINT, UINT32)

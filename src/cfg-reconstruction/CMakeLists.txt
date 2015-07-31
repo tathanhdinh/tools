@@ -88,21 +88,21 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 else ()
   add_executable(cfgrecon ${SRC_LIST})
 
-  set(PIN_DEFINITIONS "")
-  list(APPEND PIN_DEFINITIONS
-    TARGET_LINUX
-    BIGARRAY_MULTIPLIER=1
-    USING_XED
-    TARGET_IA32 HOST_IA32)
+#  set(PIN_DEFINITIONS "")
+#  list(APPEND PIN_DEFINITIONS
+#    TARGET_LINUX
+#    BIGARRAY_MULTIPLIER=1
+#    USING_XED
+#    TARGET_IA32 HOST_IA32)
 
   # set(PIN_VERSION_SCRIPT ${PIN_ROOT_DIR}/source/include/pin/pintool.ver)
 #  set(PIN_COMPILE_FLAGS "-Wall -Wno-unknown-pragmas -std=c++11 -m32 -MMD -O3 -fomit-frame-pointer -fno-strict-aliasing -fno-stack-protector")
 #  set(PIN_LINKER_FLAGS "-Wl,--hash-style=sysv -Wl,-Bsymbolic -Wl,--version-script=${PIN_VERSION_SCRIPT}")
 
 #  set(PIN_LINK_LIBS pin xed dwarf elf dl protobuf)
-  set(PIN_LINK_LIBS protobuf)
+#  set(PIN_LINK_LIBS protobuf)
 
-  link_directories(${PIN_LIB_DIRS})
+#  link_directories(${PIN_LIB_DIRS})
   include_directories(${PIN_INCLUDE_DIRS})
 
 #  # set compile and link flags
@@ -118,5 +118,5 @@ else ()
     COMPILE_FLAGS "-std=c++11 -m32"
     LINK_FLAGS "-v -m32")
 
-  target_link_libraries(cfgrecon ${PIN_LINK_LIBS} ${XED_LIB_DIRS}/libxed.a)
+  target_link_libraries(cfgrecon protobuf ${XED_LIB_DIRS}/libxed.a)
 endif ()

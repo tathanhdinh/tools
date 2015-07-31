@@ -34,11 +34,11 @@ set(SOURCES
   src/lib/type/instruction.cpp
   src/lib/type/trace.pb.cc)
 
-set(FAST_DEFS "")
-if(DEFINED FAST)
+if((DEFINED FAST) AND (FAST STREQUAL "Yes"))
 set(FAST_DEFS "/D FAST_TRACING")
 message(STATUS "Fast tracing is enabled")
 else()
+set(FAST_DEFS "")
 message(STATUS "Fast tracing is disabled")
 endif()
 
@@ -122,20 +122,20 @@ else()
   include_directories(${PIN_INCLUDE_DIRS})
 
   # add Pintool
-  add_library(vtrace SHARED ${SOURCES})
+  add_library(fasttrace SHARED ${SOURCES})
 
   # set compile and link flags
   set_source_files_properties(${SOURCES} PROPERTIES
     COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
     COMPILE_DEFINITIONS "${PIN_DEFINITIONS}")
 
-  set_target_properties(vtrace PROPERTIES
+  set_target_properties(fasttrace PROPERTIES
     PREFIX ""
     SUFFIX ".pin"
     COMPILE_DEFINITIONS "${PIN_DEFINITIONS}"
     COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
     LINK_FLAGS "${PIN_LINKER_FLAGS} -v -m32")
 
-  target_link_libraries(vtrace ${PIN_LINK_LIBS})
+  target_link_libraries(fasttrace ${PIN_LINK_LIBS})
 endif()
 
