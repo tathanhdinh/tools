@@ -18,6 +18,31 @@ static auto parse_disassembled_instruction_from_buffer (const std::string& disas
 }
 
 
+instruction::instruction(const instruction& other_inst)
+{
+  this->address = other_inst.address;
+  this->next_address = other_inst.next_address;
+  this->disassemble = other_inst.disassemble;
+
+  this->is_call = other_inst.is_call;
+  this->is_branch = other_inst.is_branch;
+  this->is_syscall = other_inst.is_syscall;
+  this->is_ret = other_inst.is_ret;
+
+  this->category = other_inst.category;
+  this->iclass = other_inst.iclass;
+
+  this->src_registers = other_inst.src_registers;
+  this->dst_registers = other_inst.dst_registers;
+
+  this->src_mem = other_inst.src_mem;
+  this->dst_mem = other_inst.dst_mem;
+
+  this->is_memory_read = other_inst.is_memory_read;
+  this->is_memory_write = other_inst.is_memory_write;
+}
+
+
 instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcode_buffer_size)
 {
   this->address = ins_addr;
@@ -54,12 +79,14 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
     if (xed_operand_is_register(operand_name)) {
       if (xed_operand_read(ins_operand)) {
         auto xed_read_reg = xed_decoded_inst_get_reg(&xed_inst, operand_name);
-        this->src_registers.push_back(xed_read_reg);
+//        this->src_registers.push_back(xed_read_reg);
+        this->src_registers[xed_read_reg] = 0x0;
       }
 
       if (xed_operand_written(ins_operand)) {
         auto xed_written_reg = xed_decoded_inst_get_reg(&xed_inst, operand_name);
-        this->dst_registers.push_back(xed_written_reg);
+//        this->dst_registers.push_back(xed_written_reg);
+        this->dst_registers[xed_written_reg] = 0x0;
       }
     }
   }

@@ -36,14 +36,20 @@ class instruction
   xed_category_enum_t category;
   xed_iclass_enum_t iclass;
 
-  std::vector<xed_reg_enum_t> src_registers;
-  std::vector<xed_reg_enum_t> dst_registers;
+//  std::vector<xed_reg_enum_t> src_registers;
+//  std::vector<xed_reg_enum_t> dst_registers;
+  std::map<xed_reg_enum_t, uint32_t> src_registers;
+  std::map<xed_reg_enum_t, uint32_t> dst_registers;
+
+  std::map<uint32_t, uint32_t> load_memory;
+  std::map<uint32_t, uint32_t> store_memmory;
 
   bool is_memory_read;
   bool is_memory_write;
 
  public:
   instruction(uint32_t ins_addr, const char* opcode_buffer, int opcode_buffer_size);
+  instruction(const instruction& other_inst);
 };
 
 //typedef std::shared_ptr<instruction> p_instruction_t;

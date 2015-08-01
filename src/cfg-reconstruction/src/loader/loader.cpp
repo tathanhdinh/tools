@@ -24,10 +24,99 @@ static auto parse_trace_header () -> void
   return;
 }
 
-static auto inst_chunk = trace_format::chunk_t();
+
+#define REG_READ true
+#define REG_WRITE false
+template<bool read_or_write>
+static auto get_register_info (p_instruction_t ins, const trace_format::ins_con_info_t& pb_con_info) -> void
+{
+  const auto& pb_reg_info = read_or_write ? pb_con_info.read_register() : pb_con_info.write_register();
+  auto& ins_regs = read_or_write ? ins->src_registers : ins->dst_registers;
+
+  const auto& reg_name = pb_reg_info.name();
+
+  for (auto& reg_enum_val : ins_regs) {
+    auto reg_enum = std::get<0>(reg_enum_val);
+    if (reg_name == xed_reg_enum_t2str(reg_enum)) {
+      auto pb_value = pb_reg_info.value();
+
+      auto reg_size = xed_get_register_width_bits(reg_enum);
+      auto reg_val = uint32_t{0};
+
+      switch (reg_size) {
+        case 8:
+          assert(pb_value.typeid_() == trace_format::BIT8);
+          reg_val = pb_value.value_8();
+          break;
+
+        case 16:
+          assert(pb_value.typeid_() == trace_format::BIT16);
+          reg_val = pb_value.value_16();
+          break;
+
+        case 32:
+          assert(pb_value.typeid_() == trace_format::BIT32);
+          reg_val = pb_value.value_32();
+          break;
+
+        default:
+          assert(false);
+          break;
+      }
+
+      ins->src_registers[reg_enum] = reg_val;
+      break;
+    }
+  }
+
+  return;
+}
+
+
+#define MEM_LOAD true
+#define MEM_STORE false
+template<bool load_or_store>
+static auto get_memory_info (p_instruction_t ins, const trace_format::ins_con_info_t& pb_con_info) -> void
+{
+  const auto& pb_mem_info = load_or_store ? pb_con_info.load_memory() : pb_con_info.store_memory();
+  auto& ins_mem = load_or_store ? ins->load_memory : ins->store_memmory;
+
+  const auto& pb_mem_addr = pb_mem_info.address();
+  assert(pb_mem_addr.has_value_32());
+  auto& mem_addr = pb_mem_addr.value_32();
+
+  const auto& pb_mem_val = pb_mem_info.value();
+  auto mem_val = uint32_t{0};
+
+  switch (pb_mem_val.typeid_()) {
+    case trace_format::BIT8:
+      mem_val = pb_mem_val.value_8();
+      break;
+
+    case trace_format::BIT16:
+      mem_val = pb_mem_val.value_16();
+      break;
+
+    case trace_format::BIT32:
+      mem_val = pb_mem_val.value_32();
+      break;
+
+    default:
+      assert(false);
+      break;
+  }
+
+  ins_mem[mem_addr] = mem_val;
+
+  return;
+}
+
 static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> void
 {
 //  auto inst_chunk = trace_format::chunk_t();
+  static auto inst_chunk = trace_format::chunk_t();
+  inst_chunk.Clear();
+
   if (!inst_chunk.ParseFromArray(buffer, buffer_size)) throw std::domain_error("parsing chunk error");
 
 //  tfm::printfln("number of instructions in chunk: %d", inst_chunk.body_size());
@@ -49,6 +138,31 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
         cached_ins_at_addr[ins_addr] = std::make_shared<instruction>(ins_addr, opcode_buffer, opcode_size);
       }
 
+      auto curr_ins = std::make_shared<instruction>(*cached_ins_at_addr[ins_addr]);
+
+      auto con_info_num = pb_inst_info.concrete_info_size();
+      for (auto info_idx = decltype(con_info_num){0}; info_idx < con_info_num; ++info_idx) {
+        const auto& pb_con_info = pb_inst_info.concrete_info(info_idx);
+
+        switch (pb_con_info.typeid_()) {
+          case trace_format::REGREAD:
+            get_register_info<REG_READ>(curr_ins, pb_con_info);
+            break;
+
+          case trace_format::REGWRITE:
+            get_register_info<REG_WRITE>(curr_ins, pb_con_info);
+            break;
+
+          case trace_format::MEMLOAD:
+            get_memory_info<MEM_LOAD>(curr_ins, pb_con_info);
+            break;
+
+          case trace_format::MEMSTORE:
+            get_memory_info<MEM_STORE>(curr_ins, pb_con_info);
+            break;
+        }
+      }
+
       trace.push_back(cached_ins_at_addr[ins_addr]);
 
 //      const auto& con_info_num = pb_inst_info.concrete_info_size();
@@ -63,7 +177,7 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
     }
   }
 
-  inst_chunk.Clear();
+//  inst_chunk.Clear();
 
   return;
 }
