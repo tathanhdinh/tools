@@ -33,7 +33,8 @@ static auto get_register_info (p_instruction_t ins, const trace_format::ins_con_
   const auto& pb_reg_info = read_or_write ? pb_con_info.read_register() : pb_con_info.write_register();
   auto& ins_regs = read_or_write ? ins->src_registers : ins->dst_registers;
 
-  const auto& reg_name = pb_reg_info.name();
+  auto reg_name = pb_reg_info.name();
+  std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), ::toupper);
 
   for (auto& reg_enum_val : ins_regs) {
     auto reg_enum = std::get<0>(reg_enum_val);
@@ -83,7 +84,7 @@ static auto get_memory_info (p_instruction_t ins, const trace_format::ins_con_in
 
   const auto& pb_mem_addr = pb_mem_info.address();
   assert(pb_mem_addr.has_value_32());
-  auto& mem_addr = pb_mem_addr.value_32();
+  auto mem_addr = pb_mem_addr.value_32();
 
   const auto& pb_mem_val = pb_mem_info.value();
   auto mem_val = uint32_t{0};
@@ -160,10 +161,13 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
           case trace_format::MEMSTORE:
             get_memory_info<MEM_STORE>(curr_ins, pb_con_info);
             break;
+
+        default:
+          break;
         }
       }
 
-      trace.push_back(cached_ins_at_addr[ins_addr]);
+      trace.push_back(curr_ins);
 
 //      const auto& con_info_num = pb_inst_info.concrete_info_size();
 //      for (auto idx = 0; idx < con_info_num; ++idx) {
@@ -255,6 +259,42 @@ auto parse_instructions_from_file (const std::string& filename) -> const p_instr
 }
 
 
+template<bool read_or_write>
+static auto save_register_info (p_instruction_t ins, std::ofstream& trace_file) -> void
+{
+  auto ins_regs = read_or_write ? ins->src_registers : ins->dst_registers;
+
+  if (ins_regs.size() > 0) {
+    const auto& rw_str_info = read_or_write ? " RR: " : " RW: ";
+
+    tfm::format(trace_file, rw_str_info);
+    for (const auto& reg_enum_val : ins_regs) {
+      auto reg_name = std::string(xed_reg_enum_t2str(std::get<0>(reg_enum_val)));
+      std::transform(std::begin(reg_name), std::end(reg_name), std::begin(reg_name), ::tolower);
+
+      tfm::format(trace_file, "[%s:0x%x]", reg_name, std::get<1>(reg_enum_val));
+    }
+  }
+  return;
+}
+
+
+template<bool load_or_store>
+static auto save_memory_info (p_instruction_t ins, std::ofstream& trace_file) -> void
+{
+  auto ins_mem = load_or_store ? ins->load_memory : ins->store_memmory;
+
+  if (ins_mem.size() > 0) {
+    const auto& ls_str_info = load_or_store ? " MR: " : " MW: ";
+
+    tfm::format(trace_file, ls_str_info);
+    for (const auto& mem_addr_val : ins_mem) {
+      tfm::format(trace_file, "[0x%x:0x%x]", std::get<0>(mem_addr_val), std::get<1>(mem_addr_val));
+    }
+  }
+  return;
+}
+
 auto save_trace_to_file (const std::string& filename) -> void
 {
   std::ofstream trace_file(filename.c_str(), std::ofstream::trunc);
@@ -263,10 +303,18 @@ auto save_trace_to_file (const std::string& filename) -> void
     if (!trace_file) throw std::runtime_error("cannot open file to write");
 
     for (const auto& inst : trace) {
-      tfm::format(trace_file, "0x%x  %s\n", inst->address, inst->disassemble);
+      tfm::format(trace_file, "0x%x  %-40s", inst->address, inst->disassemble);
+
+      save_register_info<REG_READ>(inst, trace_file);
+      save_register_info<REG_WRITE>(inst, trace_file);
+      save_memory_info<MEM_LOAD>(inst, trace_file);
+      save_memory_info<MEM_STORE>(inst, trace_file);
+
+      tfm::format(trace_file, "\n");
     }
 
     trace_file.close();
+    tfm::printfln("output file: %s", filename);
   }
   catch (const std::exception& expt) {
     tfm::printfln("%s", expt.what());

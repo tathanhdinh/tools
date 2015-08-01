@@ -35,8 +35,10 @@ instruction::instruction(const instruction& other_inst)
   this->src_registers = other_inst.src_registers;
   this->dst_registers = other_inst.dst_registers;
 
-  this->src_mem = other_inst.src_mem;
-  this->dst_mem = other_inst.dst_mem;
+//  this->src_mem = other_inst.src_mem;
+//  this->dst_mem = other_inst.dst_mem;
+  this->load_memory = other_inst.load_memory;
+  this->store_memmory = other_inst.store_memmory;
 
   this->is_memory_read = other_inst.is_memory_read;
   this->is_memory_write = other_inst.is_memory_write;
