@@ -28,6 +28,7 @@ instruction::instruction(const instruction& other_inst)
   this->is_branch = other_inst.is_branch;
   this->is_syscall = other_inst.is_syscall;
   this->is_ret = other_inst.is_ret;
+  this->is_uncond_branch = other_inst.is_uncond_branch;
 
   this->category = other_inst.category;
   this->iclass = other_inst.iclass;
@@ -70,6 +71,7 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
   this->is_call = (this->category == XED_CATEGORY_CALL);
   this->is_branch = (this->category == XED_CATEGORY_COND_BR);
   this->is_ret = (this->category == XED_CATEGORY_RET);
+  this->is_uncond_branch = (this->category == XED_CATEGORY_UNCOND_BR);
 
   this->iclass = xed_decoded_inst_get_iclass(&xed_inst);
 

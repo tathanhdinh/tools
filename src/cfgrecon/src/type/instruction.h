@@ -31,6 +31,7 @@ class instruction
   bool is_branch;
   bool is_syscall;
   bool is_ret;
+  bool is_uncond_branch;
 //  bool is_special;
 
   xed_category_enum_t category;

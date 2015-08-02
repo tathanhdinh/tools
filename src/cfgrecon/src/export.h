@@ -21,5 +21,7 @@ auto save_basic_block_tree_to_dot_file = save_basic_block_graph_to_dot_file<fals
 auto add_trace_into_basic_block_cfg    (const p_instructions_t& trace) -> void;
 auto add_trace_into_basic_block_tree   (const p_instructions_t& trace) -> void;
 
+auto save_memory_access_of_trace_to_file (const p_instructions_t& trace, const std::string& filename) -> void;
+
 #endif // EXPORT_H
 

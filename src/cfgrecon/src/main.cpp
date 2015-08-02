@@ -47,6 +47,8 @@ int main(int argc, char* argv[])
 
       parse_instructions_from_file(pb_trace_file);
       save_trace_to_file(output_trace_file);
+
+
     }
   }
   catch (const std::exception& expt) {

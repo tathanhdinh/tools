@@ -35,6 +35,7 @@ set(SRC_LIST
   src/type/trace.pb.h
   src/type/instruction.cpp
   src/graph/graph.cpp
+  src/graph/examiner.cpp
   src/loader/loader.cpp
   src/export.h
   src/main.cpp
