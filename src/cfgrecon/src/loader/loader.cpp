@@ -31,44 +31,68 @@ template<bool read_or_write>
 static auto get_register_info (p_instruction_t ins, const trace_format::ins_con_info_t& pb_con_info) -> void
 {
   const auto& pb_reg_info = read_or_write ? pb_con_info.read_register() : pb_con_info.write_register();
-  auto& ins_regs = read_or_write ? ins->src_registers : ins->dst_registers;
+  auto& ins_regs = read_or_write ? ins->read_register : ins->written_register;
 
   auto reg_name = pb_reg_info.name();
-  std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), ::toupper);
 
-  for (auto& reg_enum_val : ins_regs) {
-    auto reg_enum = std::get<0>(reg_enum_val);
-    if (reg_name == xed_reg_enum_t2str(reg_enum)) {
-      auto pb_value = pb_reg_info.value();
+  auto pb_reg_value = pb_reg_info.value();
+  auto reg_value = uint32_t{0};
 
-      auto reg_size = xed_get_register_width_bits(reg_enum);
-      auto reg_val = uint32_t{0};
+  switch (pb_reg_value.typeid_()) {
+  case trace_format::BIT8:
+    reg_value = pb_reg_value.value_8();
+    break;
 
-      switch (reg_size) {
-        case 8:
-          assert(pb_value.typeid_() == trace_format::BIT8);
-          reg_val = pb_value.value_8();
-          break;
+  case trace_format::BIT16:
+    reg_value = pb_reg_value.value_16();
+    break;
 
-        case 16:
-          assert(pb_value.typeid_() == trace_format::BIT16);
-          reg_val = pb_value.value_16();
-          break;
+  case trace_format::BIT32:
+    reg_value = pb_reg_value.value_32();
+    break;
 
-        case 32:
-          assert(pb_value.typeid_() == trace_format::BIT32);
-          reg_val = pb_value.value_32();
-          break;
-
-        default:
-          assert(false);
-          break;
-      }
-
-      ins->src_registers[reg_enum] = reg_val;
-      break;
-    }
+  default:
+    assert(false);
+    break;
   }
+
+  ins_regs[reg_name] = reg_value;
+
+//  std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), ::toupper);
+
+//  for (auto& reg_enum_val : ins_regs) {
+//    auto reg_enum = std::get<0>(reg_enum_val);
+//    if (reg_name == xed_reg_enum_t2str(reg_enum)) {
+//      auto pb_value = pb_reg_info.value();
+
+//      auto reg_size = xed_get_register_width_bits(reg_enum);
+//      auto reg_val = uint32_t{0};
+
+//      switch (reg_size) {
+//        case 8:
+//          assert(pb_value.typeid_() == trace_format::BIT8);
+//          reg_val = pb_value.value_8();
+//          break;
+
+//        case 16:
+//          assert(pb_value.typeid_() == trace_format::BIT16);
+//          reg_val = pb_value.value_16();
+//          break;
+
+//        case 32:
+//          assert(pb_value.typeid_() == trace_format::BIT32);
+//          reg_val = pb_value.value_32();
+//          break;
+
+//        default:
+//          assert(false);
+//          break;
+//      }
+
+//      ins->read_registers[reg_enum] = reg_val;
+//      break;
+//    }
+//  }
 
   return;
 }
@@ -262,17 +286,21 @@ auto parse_instructions_from_file (const std::string& filename) -> const p_instr
 template<bool read_or_write>
 static auto save_register_info (p_instruction_t ins, std::ofstream& trace_file) -> void
 {
-  auto ins_regs = read_or_write ? ins->src_registers : ins->dst_registers;
+  auto ins_regs = read_or_write ? ins->read_register : ins->written_register;
 
   if (ins_regs.size() > 0) {
-    const auto& rw_str_info = read_or_write ? " RR: " : " RW: ";
+//    const auto& rw_str_info = read_or_write ? " RR: " : " RW: ";
 
-    tfm::format(trace_file, rw_str_info);
-    for (const auto& reg_enum_val : ins_regs) {
-      auto reg_name = std::string(xed_reg_enum_t2str(std::get<0>(reg_enum_val)));
-      std::transform(std::begin(reg_name), std::end(reg_name), std::begin(reg_name), ::tolower);
+//    tfm::format(trace_file, rw_str_info);
+    for (const auto& reg_name_value : ins_regs) {
+//      auto reg_name = std::string(xed_reg_enum_t2str(std::get<0>(reg_enum_val)));
+//      std::transform(std::begin(reg_name), std::end(reg_name), std::begin(reg_name), ::tolower);
 
-      tfm::format(trace_file, "[%s:0x%x]", reg_name, std::get<1>(reg_enum_val));
+      // data segment is used in real mode only
+      if (std::get<0>(reg_name_value) != "ds") {
+        tfm::format(trace_file, "[%s:0x%x(%c)] ",
+                    std::get<0>(reg_name_value), std::get<1>(reg_name_value), read_or_write ? 'r' : 'w');
+      }
     }
   }
   return;
@@ -285,11 +313,12 @@ static auto save_memory_info (p_instruction_t ins, std::ofstream& trace_file) ->
   auto ins_mem = load_or_store ? ins->load_memory : ins->store_memmory;
 
   if (ins_mem.size() > 0) {
-    const auto& ls_str_info = load_or_store ? " MR: " : " MW: ";
+//    const auto& ls_str_info = load_or_store ? " MR: " : " MW: ";
 
-    tfm::format(trace_file, ls_str_info);
+//    tfm::format(trace_file, ls_str_info);
     for (const auto& mem_addr_val : ins_mem) {
-      tfm::format(trace_file, "[0x%x:0x%x]", std::get<0>(mem_addr_val), std::get<1>(mem_addr_val));
+      tfm::format(trace_file, "[0x%x:0x%x(%c)] ",
+                  std::get<0>(mem_addr_val), std::get<1>(mem_addr_val), load_or_store ? 'r' : 'w');
     }
   }
   return;

@@ -38,8 +38,10 @@ class instruction
 
 //  std::vector<xed_reg_enum_t> src_registers;
 //  std::vector<xed_reg_enum_t> dst_registers;
-  std::map<xed_reg_enum_t, uint32_t> src_registers;
-  std::map<xed_reg_enum_t, uint32_t> dst_registers;
+//  std::map<xed_reg_enum_t, uint32_t> read_registers;
+//  std::map<xed_reg_enum_t, uint32_t> written_registers;
+  std::map<std::string, uint32_t> read_register;
+  std::map<std::string, uint32_t> written_register;
 
   std::map<uint32_t, uint32_t> load_memory;
   std::map<uint32_t, uint32_t> store_memmory;

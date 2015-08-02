@@ -32,8 +32,10 @@ instruction::instruction(const instruction& other_inst)
   this->category = other_inst.category;
   this->iclass = other_inst.iclass;
 
-  this->src_registers = other_inst.src_registers;
-  this->dst_registers = other_inst.dst_registers;
+//  this->read_registers = other_inst.read_registers;
+//  this->written_registers = other_inst.written_registers;
+  this->read_register = other_inst.read_register;
+  this->written_register = other_inst.written_register;
 
 //  this->src_mem = other_inst.src_mem;
 //  this->dst_mem = other_inst.dst_mem;
@@ -72,26 +74,30 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
   this->iclass = xed_decoded_inst_get_iclass(&xed_inst);
 
   auto xi = xed_decoded_inst_inst(&xed_inst);
-  auto ins_noperands = xed_inst_noperands(xi);
+//  auto ins_operand_num = xed_inst_noperands(xi);
+  auto ins_operand_num = xed_decoded_inst_noperands(&xed_inst);
 
-  for (decltype(ins_noperands) idx = 0; idx < ins_noperands; ++idx) {
-    auto ins_operand = xed_inst_operand(xi, idx);
-    auto operand_name = xed_operand_name(ins_operand);
+//  for (auto idx = decltype(ins_operand_num){0}; idx < ins_operand_num; ++idx) {
+//    auto ins_operand = xed_inst_operand(xi, idx);
+//    auto operand_name = xed_operand_name(ins_operand);
 
-    if (xed_operand_is_register(operand_name)) {
-      if (xed_operand_read(ins_operand)) {
-        auto xed_read_reg = xed_decoded_inst_get_reg(&xed_inst, operand_name);
-//        this->src_registers.push_back(xed_read_reg);
-        this->src_registers[xed_read_reg] = 0x0;
-      }
+//    if (xed_operand_is_register(operand_name)) {
+//      if (xed_operand_read(ins_operand)) {
+//        auto xed_read_reg = xed_decoded_inst_get_reg(&xed_inst, operand_name);
+////        this->src_registers.push_back(xed_read_reg);
+//        this->read_registers[xed_read_reg] = 0x0;
+//      }
 
-      if (xed_operand_written(ins_operand)) {
-        auto xed_written_reg = xed_decoded_inst_get_reg(&xed_inst, operand_name);
-//        this->dst_registers.push_back(xed_written_reg);
-        this->dst_registers[xed_written_reg] = 0x0;
-      }
-    }
-  }
+//      if (xed_operand_written(ins_operand)) {
+//        auto xed_written_reg = xed_decoded_inst_get_reg(&xed_inst, operand_name);
+////        this->dst_registers.push_back(xed_written_reg);
+////        INS_XedExactMapToPinReg(xed_written_reg);
+//        this->written_registers[xed_written_reg] = 0x0;
+//      }
+//    }
+//  }
+
+//  tfm::printfln("%s src: %d dst: %d", this->disassemble, this->read_registers.size(), this->written_registers.size());
 
   this->is_memory_read = false; this->is_memory_write = false;
   auto ins_mem_noperands = xed_decoded_inst_number_of_memory_operands(&xed_inst);
