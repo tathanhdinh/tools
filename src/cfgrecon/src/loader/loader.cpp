@@ -6,7 +6,7 @@
 #include <memory>
 #include <fstream>
 
-static p_instructions_t trace = p_instructions_t{};
+p_instructions_t trace = p_instructions_t{};
 map_address_instruction_t cached_ins_at_addr = map_address_instruction_t();
 
 static std::ifstream protobuf_trace_file;

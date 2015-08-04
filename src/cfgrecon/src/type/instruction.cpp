@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <stdexcept>
+#include <tuple>
 
 #include <boost/algorithm/string.hpp>
 
@@ -43,10 +44,69 @@ instruction::instruction(const instruction& other_inst)
   this->load_memory = other_inst.load_memory;
   this->store_memmory = other_inst.store_memmory;
 
+  this->load_memory_size = other_inst.load_memory_size;
+  this->store_memory_size = other_inst.store_memory_size;
+
+  this->static_load_addresses = other_inst.static_load_addresses;
+  this->static_store_addresses = other_inst.static_store_addresses;
+
   this->is_memory_read = other_inst.is_memory_read;
   this->is_memory_write = other_inst.is_memory_write;
 }
 
+
+#define MEM_LOAD_SIZE          0
+#define MEM_STORE_SIZE         1
+#define MEM_LOAD_STATIC_ADDRS  2
+#define MEM_STORE_STATIC_ADDRS 3
+static auto get_memory_access_info (const xed_decoded_inst_t* p_inst) -> std::tuple< uint32_t, uint32_t,
+                                                                                     std::vector<uint32_t>, std::vector<uint32_t> >
+{
+  auto load_size = uint32_t{0};
+  auto store_size = uint32_t{0};
+  auto static_load_addrs = std::vector<uint32_t>{};
+  auto static_store_addrs = std::vector<uint32_t>{};
+
+  auto mem_op_num = xed_decoded_inst_number_of_memory_operands(p_inst);
+
+  if (mem_op_num > 0) {
+
+    for (auto op_idx = decltype(mem_op_num){0}; op_idx < mem_op_num; ++op_idx) {
+
+      if (xed_decoded_inst_mem_read(p_inst, op_idx)) {
+        auto mem_dsplc = xed_decoded_inst_get_memory_displacement(p_inst, op_idx);
+
+        auto base_reg = xed_decoded_inst_get_base_reg(p_inst, op_idx);
+        auto index_reg = xed_decoded_inst_get_index_reg(p_inst, op_idx);
+
+        load_size = xed_decoded_inst_get_memory_operand_length(p_inst, op_idx);
+
+        if (base_reg == XED_REG_INVALID && index_reg == XED_REG_INVALID) {          
+          for (auto idx = uint32_t{0}; idx < load_size; ++idx) {
+            static_load_addrs.push_back(mem_dsplc + idx);
+          }
+        }
+      }
+
+      if (xed_decoded_inst_mem_written(p_inst, op_idx)) {
+        auto mem_dsplc = xed_decoded_inst_get_memory_displacement(p_inst, op_idx);
+
+        auto base_reg = xed_decoded_inst_get_base_reg(p_inst, op_idx);
+        auto index_reg = xed_decoded_inst_get_index_reg(p_inst, op_idx);
+
+        store_size = xed_decoded_inst_get_memory_operand_length(p_inst, op_idx);
+
+        if (base_reg == XED_REG_INVALID && index_reg == XED_REG_INVALID) {
+          for (auto idx = decltype(store_size){0}; idx < store_size; ++idx) {
+            static_store_addrs.push_back(mem_dsplc + idx);
+          }
+        }
+      }
+    }
+  }
+
+  return std::make_tuple(load_size, store_size, static_load_addrs, static_store_addrs);
+}
 
 instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcode_buffer_size)
 {
@@ -75,9 +135,9 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
 
   this->iclass = xed_decoded_inst_get_iclass(&xed_inst);
 
-  auto xi = xed_decoded_inst_inst(&xed_inst);
+//  auto xi = xed_decoded_inst_inst(&xed_inst);
 //  auto ins_operand_num = xed_inst_noperands(xi);
-  auto ins_operand_num = xed_decoded_inst_noperands(&xed_inst);
+//  auto ins_operand_num = xed_decoded_inst_noperands(&xed_inst);
 
 //  for (auto idx = decltype(ins_operand_num){0}; idx < ins_operand_num; ++idx) {
 //    auto ins_operand = xed_inst_operand(xi, idx);
@@ -107,4 +167,13 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
     if (xed_decoded_inst_mem_read(&xed_inst, mem_idx)) this->is_memory_read = true;
     if (xed_decoded_inst_mem_written(&xed_inst, mem_idx)) this->is_memory_write = true;
   }
+
+//  tfm::printfln("%s", this->disassemble);
+  auto mem_access_info = get_memory_access_info(&xed_inst);
+
+  this->load_memory_size = std::get<MEM_LOAD_SIZE>(mem_access_info);
+  this->store_memory_size = std::get<MEM_STORE_SIZE>(mem_access_info);
+
+  this->static_load_addresses = std::get<MEM_LOAD_STATIC_ADDRS>(mem_access_info);
+  this->static_store_addresses = std::get<MEM_STORE_STATIC_ADDRS>(mem_access_info);
 }

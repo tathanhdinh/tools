@@ -47,6 +47,12 @@ class instruction
   std::map<uint32_t, uint32_t> load_memory;
   std::map<uint32_t, uint32_t> store_memmory;
 
+  uint32_t load_memory_size;
+  uint32_t store_memory_size;
+
+  std::vector<uint32_t> static_load_addresses;
+  std::vector<uint32_t> static_store_addresses;
+
   bool is_memory_read;
   bool is_memory_write;
 

@@ -9,7 +9,7 @@
 int main(int argc, char* argv[])
 {
   try {
-    if (argc < 4) throw std::logic_error("please run as: cfgrecon mode[trace/tree/cfg] protobuf_trace_file(s) output_file");
+    if (argc < 4) throw std::logic_error("please run as: cfgrecon mode[trace/tree/cfg] protobuf_trace_file(s) output_file(s)");
 
     if (strcmp(argv[1], "cfg") == 0 || strcmp(argv[1], "tree") == 0) {
       auto cfg_or_tree = true;
@@ -48,7 +48,13 @@ int main(int argc, char* argv[])
       parse_instructions_from_file(pb_trace_file);
       save_trace_to_file(output_trace_file);
 
-
+      if (argc > 4) {
+        auto output_mem_access_file = std::string(argv[4]);
+//        save_memory_access_to_file(output_mem_access_file);
+//        save_chunk_sequence_to_file(output_mem_access_file);
+//        save_chunks_io_to_file(output_mem_access_file);
+        save_memory_state_of_chunks_to_file(output_mem_access_file);
+      }
     }
   }
   catch (const std::exception& expt) {
