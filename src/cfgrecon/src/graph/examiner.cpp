@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <set>
-//#include <boost/bind.hpp>
 
 extern p_instructions_t trace;
 
@@ -38,7 +37,7 @@ static auto get_memory_access_addresses (p_instructions_t trace) -> std::vector<
 }
 
 
-static auto split_trace_into_chunks_of_mov_instructions (p_instructions_t trace) -> std::vector<p_instructions_t>
+auto split_trace_into_chunks (const p_instructions_t& trace) -> std::vector<p_instructions_t>
 {
   auto ins_chunks = std::vector<p_instructions_t>{};
 
@@ -65,7 +64,7 @@ static auto extract_memory_access_chunks (p_instructions_t trace) -> std::vector
 {
   auto mem_access_chunks = std::vector<p_chunk_mem_access_t>{};
 
-  auto ins_chunks = split_trace_into_chunks_of_mov_instructions(trace);
+  auto ins_chunks = split_trace_into_chunks(trace);
   for (auto chunk : ins_chunks) {
     auto load_addresses = get_memory_access_addresses<MEM_LOAD>(chunk);
     auto store_addresses = get_memory_access_addresses<MEM_STORE>(chunk);
@@ -267,7 +266,7 @@ auto save_memory_access_to_file (const std::string& filename) -> void
     std::ofstream output_file(filename.c_str(), std::ofstream::trunc);
     if (!output_file) throw std::logic_error("cannot open output file");
 
-    auto ins_chunks = split_trace_into_chunks_of_mov_instructions(trace);
+    auto ins_chunks = split_trace_into_chunks(trace);
     for (auto chunk : ins_chunks) {
       tfm::format(output_file, "=====\n");
 
@@ -353,7 +352,7 @@ auto save_chunks_io_to_file (const std::string& filename) -> void
     std::ofstream output_file(filename.c_str(), std::ofstream::trunc);
     if (!output_file) throw std::logic_error("cannot open output file");
 
-    auto ins_chunks = split_trace_into_chunks_of_mov_instructions(trace);
+    auto ins_chunks = split_trace_into_chunks(trace);
 
     for (const auto& chunk : ins_chunks) {
       auto io_addrs = get_memory_io_of_chunk(chunk);
@@ -388,15 +387,19 @@ auto save_chunks_io_to_file (const std::string& filename) -> void
 }
 
 
-auto save_memory_state_of_chunks_to_file (const std::string& filename) -> void
+auto save_memory_state_to_file (const std::string& filename) -> void
 {
   try {
-    std::ofstream output_file(filename.c_str(), std::ofstream::trunc);
-    if (!output_file) throw std::logic_error("cannot open output file");
+    auto ins_chunks = split_trace_into_chunks(trace);
 
-    auto ins_chunks = split_trace_into_chunks_of_mov_instructions(trace);
-
+    auto chunk_idx = uint32_t{0};
     for (const auto& chunk : ins_chunks) {
+      auto chunk_idx_str = std::to_string(chunk_idx);
+      auto chunk_filename = filename + chunk_idx_str;
+
+      std::ofstream output_file(chunk_filename.c_str(), std::ofstream::trunc);
+      if (!output_file) throw std::logic_error("cannot open output file");
+
       auto chunk_mem_state = get_static_memory_state_of_chunk(chunk);
 //      auto chunk_mem_state = get_dynamic_memory_state_of_chunk(chunk);
 
@@ -404,11 +407,11 @@ auto save_memory_state_of_chunks_to_file (const std::string& filename) -> void
         tfm::format(output_file, "0x%x 0x%x\n", std::get<0>(addr_val), std::get<1>(addr_val));
       }
 
-      tfm::format(output_file, "=====\n");
-    }
+      output_file.close();
+      tfm::printfln("output file: %s", chunk_filename);
 
-    output_file.close();
-    tfm::printfln("output file: %s", filename);
+      ++chunk_idx;
+    }
   }
   catch (const std::exception& expt) {
     tfm::printfln("%s", expt.what());

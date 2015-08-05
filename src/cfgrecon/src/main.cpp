@@ -46,14 +46,15 @@ int main(int argc, char* argv[])
       auto output_trace_file = std::string(argv[3]);
 
       parse_instructions_from_file(pb_trace_file);
-      save_trace_to_file(output_trace_file);
+      save_chunks_to_file (output_trace_file);
+//      save_trace_to_file(output_trace_file);
 
       if (argc > 4) {
         auto output_mem_access_file = std::string(argv[4]);
 //        save_memory_access_to_file(output_mem_access_file);
 //        save_chunk_sequence_to_file(output_mem_access_file);
 //        save_chunks_io_to_file(output_mem_access_file);
-        save_memory_state_of_chunks_to_file(output_mem_access_file);
+//        save_memory_state_to_file(output_mem_access_file);
       }
     }
   }

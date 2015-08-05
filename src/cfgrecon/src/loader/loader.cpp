@@ -326,9 +326,8 @@ static auto save_memory_info (p_instruction_t ins, std::ofstream& trace_file) ->
 
 auto save_trace_to_file (const std::string& filename) -> void
 {
-  std::ofstream trace_file(filename.c_str(), std::ofstream::trunc);
-
   try {
+    std::ofstream trace_file(filename.c_str(), std::ofstream::trunc);
     if (!trace_file) throw std::runtime_error("cannot open file to write");
 
     for (const auto& inst : trace) {
@@ -352,3 +351,40 @@ auto save_trace_to_file (const std::string& filename) -> void
   return;
 }
 
+extern auto split_trace_into_chunks (const p_instructions_t& trace) -> std::vector<p_instructions_t>;
+auto save_chunks_to_file (const std::string& filename) -> void
+{
+  try {
+    auto ins_chunks = split_trace_into_chunks(trace);
+
+    auto chunk_idx = uint32_t{0};
+    for (const auto& chunk : ins_chunks) {
+      auto chunk_idx_str = std::to_string(chunk_idx);
+      auto chunk_filename = filename + chunk_idx_str;
+
+      std::ofstream output_file(chunk_filename.c_str(), std::ofstream::trunc);
+      if (!output_file) throw std::logic_error("cannot open output file");
+
+      for (const auto& inst : chunk) {
+        tfm::format(output_file, "0x%x  %-40s", inst->address, inst->disassemble);
+
+        save_register_info<REG_READ>(inst, output_file);
+//        save_register_info<REG_WRITE>(inst, output_file);
+        save_memory_info<MEM_LOAD>(inst, output_file);
+//        save_memory_info<MEM_STORE>(inst, output_file);
+
+        tfm::format(output_file, "\n");
+      }
+
+      output_file.close();
+      tfm::printfln("output file: %s", chunk_filename);
+
+      ++chunk_idx;
+    }
+  }
+  catch (const std::exception& expt) {
+    tfm::printfln("%s", expt.what());
+  }
+
+  return;
+}

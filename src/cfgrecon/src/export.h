@@ -5,12 +5,15 @@
 
 #include <string>
 
+//auto split_trace_into_chunks           (const p_instructions_t& trace) -> std::vector<p_instructions_t>;
+
 auto parse_instructions_from_file      (const std::string& filename)   -> const p_instructions_t&;
 auto save_trace_to_file                (const std::string& filename)   -> void;
 auto save_chunk_sequence_to_file       (const std::string& filename)   -> void;
 auto save_chunks_io_to_file            (const std::string& filename)   -> void;
 auto save_memory_access_to_file        (const std::string& filename)   -> void;
-auto save_memory_state_of_chunks_to_file (const std::string& filename) -> void;
+auto save_memory_state_to_file         (const std::string& filename)   -> void;
+auto save_chunks_to_file               (const std::string& filename)   -> void;
 
 template<bool cfg_or_tree>
 auto construct_basic_block_graph       () -> void;
