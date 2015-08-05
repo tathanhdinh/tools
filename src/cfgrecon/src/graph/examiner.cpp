@@ -46,8 +46,9 @@ auto split_trace_into_chunks (const p_instructions_t& trace) -> std::vector<p_in
 
   for (auto ins_iter = std::begin(trace); ins_iter != std::end(trace); ++ins_iter) {
     if ((*ins_iter)->is_uncond_branch) {
-      tfm::printfln("chunk size: %d instructions", ins_iter - begin_iter);
-      ins_chunks.push_back(p_instructions_t(begin_iter, ins_iter));
+//      tfm::printfln("%s", (*ins_iter)->disassemble);
+      tfm::printfln("chunk size: %d instructions", ins_iter - begin_iter + 1);
+      ins_chunks.push_back(p_instructions_t(begin_iter, ins_iter + 1));
       begin_iter = ins_iter; ++begin_iter;
     }
     else if (ins_iter == last_iter) {

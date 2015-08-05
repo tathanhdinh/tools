@@ -367,10 +367,11 @@ auto save_chunks_to_file (const std::string& filename) -> void
 
       for (const auto& inst : chunk) {
         tfm::format(output_file, "0x%x  %-40s", inst->address, inst->disassemble);
+//        tfm::format(output_file, "%-40s", inst->disassemble);
 
-        save_register_info<REG_READ>(inst, output_file);
+//        save_register_info<REG_READ>(inst, output_file);
 //        save_register_info<REG_WRITE>(inst, output_file);
-        save_memory_info<MEM_LOAD>(inst, output_file);
+//        save_memory_info<MEM_LOAD>(inst, output_file);
 //        save_memory_info<MEM_STORE>(inst, output_file);
 
         tfm::format(output_file, "\n");

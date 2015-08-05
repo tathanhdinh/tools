@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 //      save_trace_to_file(output_trace_file);
 
       if (argc > 4) {
-        auto output_mem_access_file = std::string(argv[4]);
+//        auto output_mem_access_file = std::string(argv[4]);
 //        save_memory_access_to_file(output_mem_access_file);
 //        save_chunk_sequence_to_file(output_mem_access_file);
 //        save_chunks_io_to_file(output_mem_access_file);
