@@ -579,6 +579,8 @@ auto flush_trace_in_protobuf_format () -> void
     protobuf_trace_file.write(reinterpret_cast<const char*>(&chunk_size), sizeof(decltype(chunk_size)));
     protobuf_trace_file.write(chunk_buffer.get(), chunk_size);
 
+    protobuf_trace_file.flush();
+
 //    tfm::printfln("saved chunk size: %d bytes", chunk_size);
 
 //    tfm::printfln("saved chunk size: %d", chunk_size);

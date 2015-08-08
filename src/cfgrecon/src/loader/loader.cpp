@@ -342,7 +342,7 @@ auto save_trace_to_file (const std::string& filename) -> void
     }
 
     trace_file.close();
-    tfm::printfln("output file: %s", filename);
+    tfm::printfln("output trace file: %s", filename);
   }
   catch (const std::exception& expt) {
     tfm::printfln("%s", expt.what());
@@ -352,10 +352,12 @@ auto save_trace_to_file (const std::string& filename) -> void
 }
 
 extern auto split_trace_into_chunks (const p_instructions_t& trace) -> std::vector<p_instructions_t>;
+extern auto split_trace_into_chunks (const p_instructions_t& trace, uint32_t start_addr) -> std::vector<p_instructions_t>;
+
 auto save_chunks_to_file (const std::string& filename) -> void
 {
   try {
-    auto ins_chunks = split_trace_into_chunks(trace);
+    auto ins_chunks = split_trace_into_chunks(trace, 0x8048709);
 
     auto chunk_idx = uint32_t{0};
     for (const auto& chunk : ins_chunks) {
@@ -369,16 +371,16 @@ auto save_chunks_to_file (const std::string& filename) -> void
         tfm::format(output_file, "0x%x  %-40s", inst->address, inst->disassemble);
 //        tfm::format(output_file, "%-40s", inst->disassemble);
 
-//        save_register_info<REG_READ>(inst, output_file);
-//        save_register_info<REG_WRITE>(inst, output_file);
-//        save_memory_info<MEM_LOAD>(inst, output_file);
-//        save_memory_info<MEM_STORE>(inst, output_file);
+        save_register_info<REG_READ>(inst, output_file);
+        save_register_info<REG_WRITE>(inst, output_file);
+        save_memory_info<MEM_LOAD>(inst, output_file);
+        save_memory_info<MEM_STORE>(inst, output_file);
 
         tfm::format(output_file, "\n");
       }
 
       output_file.close();
-      tfm::printfln("output file: %s", chunk_filename);
+      tfm::printfln("output chunk file: %s", chunk_filename);
 
       ++chunk_idx;
     }

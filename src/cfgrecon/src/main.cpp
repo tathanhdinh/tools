@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 
       parse_instructions_from_file(pb_trace_file);
       save_chunks_to_file (output_trace_file);
-//      save_trace_to_file(output_trace_file);
+      save_trace_to_file(output_trace_file);
 
       if (argc > 4) {
 //        auto output_mem_access_file = std::string(argv[4]);

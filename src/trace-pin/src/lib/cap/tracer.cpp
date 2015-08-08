@@ -370,10 +370,14 @@ static auto save_memory (ADDRINT mem_addr, UINT32 mem_size, THREADID thread_id) 
 
       if (mem_size != 0) {
         ASSERTX((mem_size == 1) || (mem_size == 2) || (mem_size == 4) || (mem_size == 8));
-        ASSERTX(mem_addr != 0);
+//        ASSERTX(mem_addr != 0);
+//        tfm::printfln("0x%x mem_addr: 0x%x", std::get<INS_ADDRESS>(ins_at_thread[thread_id]), mem_addr);
 
-        if (read_or_write == READ) save_memory_size[mem_size](mem_map, mem_addr);
-        else mem_map[dyn_mem_t(mem_addr, mem_size)] = 0;
+        // some obscure program use: access to zero exception to exit
+        if (mem_addr != 0) {
+          if (read_or_write == READ) save_memory_size[mem_size](mem_map, mem_addr);
+          else mem_map[dyn_mem_t(mem_addr, mem_size)] = 0;
+        }
       }
       else { // save_memory is called with mem_size == 0
         ASSERTX((mem_map.size() == 1) || (mem_map.size() == 0));

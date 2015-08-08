@@ -61,6 +61,35 @@ auto split_trace_into_chunks (const p_instructions_t& trace) -> std::vector<p_in
 }
 
 
+auto split_trace_into_chunks (const p_instructions_t& trace, uint32_t start_addr) -> std::vector<p_instructions_t>
+{
+  auto ins_chunks = std::vector<p_instructions_t>{};
+
+  auto begin_iter = std::begin(trace);
+  auto end_iter = std::end(trace);
+  auto begin_chunk_iter = end_iter;
+
+  auto last_iter = end_iter; --last_iter;
+
+  for (auto ins_iter = begin_iter; ins_iter != end_iter; ++ins_iter) {
+    if ((*ins_iter)->address == start_addr) {
+      if (begin_chunk_iter != end_iter) {
+        ins_chunks.push_back(p_instructions_t(begin_chunk_iter, ins_iter));
+      }
+
+      begin_chunk_iter = ins_iter;
+    }
+    else if (ins_iter == last_iter) {
+      if (begin_chunk_iter != end_iter) {
+        ins_chunks.push_back(p_instructions_t(begin_chunk_iter, last_iter));
+      }
+    }
+  }
+
+  return ins_chunks;
+}
+
+
 static auto extract_memory_access_chunks (p_instructions_t trace) -> std::vector<p_chunk_mem_access_t>
 {
   auto mem_access_chunks = std::vector<p_chunk_mem_access_t>{};
