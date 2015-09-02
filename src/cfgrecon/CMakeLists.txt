@@ -16,25 +16,26 @@ set(PIN_CPU_ARCH "ia32")
 set(PIN_CPU_ARCH_LONG "ia32")
 
 set(PIN_INCLUDE_DIRS
-  ${PIN_ROOT_DIR}/extras/xed2-${PIN_CPU_ARCH_LONG}/include
+  ${PIN_ROOT_DIR}/extras/xed-${PIN_CPU_ARCH_LONG}/include
   ${PIN_ROOT_DIR}/source/include/pin
   ${PIN_ROOT_DIR}/source/include/pin/gen
   ${PIN_ROOT_DIR}/extras/components/include
   ${LOCAL_INCLUDE_DIR})
 
 set(PIN_LIB_DIRS
-  ${PIN_ROOT_DIR}/extras/xed2-${PIN_CPU_ARCH_LONG}/lib
+  ${PIN_ROOT_DIR}/extras/xed-${PIN_CPU_ARCH_LONG}/lib
   ${PIN_ROOT_DIR}/${PIN_CPU_ARCH_LONG}/lib
   ${PIN_ROOT_DIR}/${PIN_CPU_ARCH_LONG}/lib-ext)
 
 set(XED_LIB_DIRS
-  ${PIN_ROOT_DIR}/extras/xed2-${PIN_CPU_ARCH_LONG}/lib)
+  ${PIN_ROOT_DIR}/extras/xed-${PIN_CPU_ARCH_LONG}/lib)
 
 set(SRC_LIST
   src/type/trace.pb.cc
   src/type/trace.pb.h
   src/type/instruction.cpp
   src/graph/graph.cpp
+  src/graph/movf.cpp
   src/graph/examiner.cpp
   src/loader/loader.cpp
   src/export.h

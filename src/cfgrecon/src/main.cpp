@@ -40,21 +40,26 @@ int main(int argc, char* argv[])
       tfm::printfln("\nelapsed time: %d secs", (ending_time - starting_time) / CLOCKS_PER_SEC);
     }
     else {
-      if (strcmp(argv[1], "trace") != 0) throw std::logic_error("mode must be trace, tree, or cfg");
+      if (strcmp(argv[1], "movf")) {
 
-      auto pb_trace_file = std::string(argv[2]);
-      auto output_trace_file = std::string(argv[3]);
+      }
+      else {
+        if (strcmp(argv[1], "trace") != 0) throw std::logic_error("mode must be trace, tree, or cfg");
 
-      parse_instructions_from_file(pb_trace_file);
-      save_chunks_to_file (output_trace_file);
-      save_trace_to_file(output_trace_file);
+        auto pb_trace_file = std::string(argv[2]);
+        auto output_trace_file = std::string(argv[3]);
 
-      if (argc > 4) {
-//        auto output_mem_access_file = std::string(argv[4]);
-//        save_memory_access_to_file(output_mem_access_file);
-//        save_chunk_sequence_to_file(output_mem_access_file);
-//        save_chunks_io_to_file(output_mem_access_file);
-//        save_memory_state_to_file(output_mem_access_file);
+        parse_instructions_from_file(pb_trace_file);
+  //      save_chunks_to_file (output_trace_file);
+        save_trace_to_file(output_trace_file);
+
+        if (argc > 4) {
+  //        auto output_mem_access_file = std::string(argv[4]);
+  //        save_memory_access_to_file(output_mem_access_file);
+  //        save_chunk_sequence_to_file(output_mem_access_file);
+  //        save_chunks_io_to_file(output_mem_access_file);
+  //        save_memory_state_to_file(output_mem_access_file);
+        }
       }
     }
   }

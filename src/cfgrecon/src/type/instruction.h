@@ -56,6 +56,9 @@ class instruction
   bool is_memory_read;
   bool is_memory_write;
 
+  bool is_immediate_read;
+  uint32_t immediate_read_value;
+
  public:
   instruction(uint32_t ins_addr, const char* opcode_buffer, int opcode_buffer_size);
   instruction(const instruction& other_inst);

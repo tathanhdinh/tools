@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <fstream>
+#include <locale>
 
 p_instructions_t trace = p_instructions_t{};
 map_address_instruction_t cached_ins_at_addr = map_address_instruction_t();
@@ -265,19 +266,18 @@ auto parse_instructions_from_file (const std::string& filename) -> const p_instr
     tfm::printfln("===== reading protobuf trace (input file: %s)...", filename);
 //    protobuf_trace_file = std::move(std::ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary));
     protobuf_trace_file.open(filename.c_str(), std::ifstream::in | std::ifstream::binary);
-    if (!protobuf_trace_file) throw std::runtime_error("cannot open file to write");
+    if (!protobuf_trace_file) throw std::runtime_error("cannot open file to read");
 
     xed_tables_init();
 
     parse_trace_header();
-    parse_trace_chunks();
-
-    protobuf_trace_file.close();
+    parse_trace_chunks();    
   }
   catch (const std::exception& expt) {
-    tfm::printfln("%s instruction parsed", trace.size());
+    tfm::printfln("%s : %s instruction parsed", expt.what(), trace.size());
   }
 
+  protobuf_trace_file.close();
   google::protobuf::ShutdownProtobufLibrary();
   return trace;
 }
@@ -298,6 +298,12 @@ static auto save_register_info (p_instruction_t ins, std::ofstream& trace_file) 
 
       // data segment is used in real mode only
       if (std::get<0>(reg_name_value) != "ds") {
+//        auto reg_value = std::get<1>(reg_name_value);
+//        auto format_str = (reg_value <= 127) && std::isprint(reg_value) ? "[%s:%c(%c)] " : "[%s:0x%x(%c)] ";
+
+//        tfm::format(trace_file, format_str,
+//                    std::get<0>(reg_name_value), reg_value, read_or_write ? 'r' : 'w');
+
         tfm::format(trace_file, "[%s:0x%x(%c)] ",
                     std::get<0>(reg_name_value), std::get<1>(reg_name_value), read_or_write ? 'r' : 'w');
       }
@@ -317,6 +323,12 @@ static auto save_memory_info (p_instruction_t ins, std::ofstream& trace_file) ->
 
 //    tfm::format(trace_file, ls_str_info);
     for (const auto& mem_addr_val : ins_mem) {
+//      auto mem_value = std::get<1>(mem_addr_val);
+//      auto format_str = (mem_value <= 127) && std::isprint(mem_value) ? "[0x%x:%c(%c)] " : "[0x%x:0x%x(%c)] ";
+
+//      tfm::format(trace_file, format_str,
+//                  std::get<0>(mem_addr_val), mem_value, load_or_store ? 'r' : 'w');
+
       tfm::format(trace_file, "[0x%x:0x%x(%c)] ",
                   std::get<0>(mem_addr_val), std::get<1>(mem_addr_val), load_or_store ? 'r' : 'w');
     }
@@ -333,10 +345,10 @@ auto save_trace_to_file (const std::string& filename) -> void
     for (const auto& inst : trace) {
       tfm::format(trace_file, "0x%x  %-40s", inst->address, inst->disassemble);
 
-      save_register_info<REG_READ>(inst, trace_file);
-      save_register_info<REG_WRITE>(inst, trace_file);
-      save_memory_info<MEM_LOAD>(inst, trace_file);
-      save_memory_info<MEM_STORE>(inst, trace_file);
+//      save_register_info<REG_READ>(inst, trace_file);
+//      save_register_info<REG_WRITE>(inst, trace_file);
+//      save_memory_info<MEM_LOAD>(inst, trace_file);
+//      save_memory_info<MEM_STORE>(inst, trace_file);
 
       tfm::format(trace_file, "\n");
     }
@@ -357,7 +369,8 @@ extern auto split_trace_into_chunks (const p_instructions_t& trace, uint32_t sta
 auto save_chunks_to_file (const std::string& filename) -> void
 {
   try {
-    auto ins_chunks = split_trace_into_chunks(trace, 0x8048709);
+    auto ins_chunks = split_trace_into_chunks(trace);
+//    auto ins_chunks = split_trace_into_chunks(trace, 0x8048709);
 
     auto chunk_idx = uint32_t{0};
     for (const auto& chunk : ins_chunks) {

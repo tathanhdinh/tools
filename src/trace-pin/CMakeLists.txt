@@ -16,14 +16,14 @@ set(PIN_CPU_ARCH "ia32")
 set(PIN_CPU_ARCH_LONG "ia32")
 
 set(PIN_INCLUDE_DIRS
-  ${PIN_ROOT_DIR}/extras/xed2-${PIN_CPU_ARCH_LONG}/include
+  ${PIN_ROOT_DIR}/extras/xed-${PIN_CPU_ARCH_LONG}/include
   ${PIN_ROOT_DIR}/source/include/pin
   ${PIN_ROOT_DIR}/source/include/pin/gen
   ${PIN_ROOT_DIR}/extras/components/include
   ${LOCAL_INCLUDE_DIR})
 
 set(PIN_LIBRARY_DIRS
-  ${PIN_ROOT_DIR}/extras/xed2-${PIN_CPU_ARCH_LONG}/lib
+  ${PIN_ROOT_DIR}/extras/xed-${PIN_CPU_ARCH_LONG}/lib
   ${PIN_ROOT_DIR}/${PIN_CPU_ARCH_LONG}/lib
   ${PIN_ROOT_DIR}/${PIN_CPU_ARCH_LONG}/lib-ext)
 
@@ -116,7 +116,7 @@ else()
 
   set(PIN_LINKER_FLAGS "-Wl,--hash-style=sysv -Wl,-Bsymbolic -Wl,--version-script=${PIN_VERSION_SCRIPT}")
 
-  set(PIN_LINK_LIBS pin xed dwarf elf dl protobuf)
+  set(PIN_LINK_LIBS pin pinvm pinapp sapin xed pindwarf dwarf elf dl protobuf)
 
   link_directories(${PIN_LIBRARY_DIRS})
   include_directories(${PIN_INCLUDE_DIRS})

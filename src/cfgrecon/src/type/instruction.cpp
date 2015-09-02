@@ -52,6 +52,9 @@ instruction::instruction(const instruction& other_inst)
 
   this->is_memory_read = other_inst.is_memory_read;
   this->is_memory_write = other_inst.is_memory_write;
+
+  this->is_immediate_read = other_inst.is_immediate_read;
+  this->immediate_read_value = other_inst.immediate_read_value;
 }
 
 
@@ -117,15 +120,18 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
 
   auto decode_err = xed_decode(&xed_inst, XED_STATIC_CAST(const xed_uint8_t*, opcode_buffer), opcode_buffer_size);
 
-  if (decode_err != XED_ERROR_NONE) throw std::logic_error("instruction decode error");
+  if (decode_err != XED_ERROR_NONE) throw std::logic_error("instruction decoding error");
 
   std::fill_n(disasm_buffer, 1000, 0);
-//  xed_decoded_inst_dump_xed_format(&xed_inst, disasm_buffer, 118, ins_addr);
-//  auto disasm_err = xed_format_context(XED_SYNTAX_INTEL, &xed_inst, disasm_buffer, 128, ins_addr, nullptr);
-//  this->disassemble = std::string(disasm_buffer);
+  xed_decoded_inst_dump_xed_format(&xed_inst, disasm_buffer, 128, ins_addr);
+  auto disasm_err = xed_format_context(XED_SYNTAX_INTEL, &xed_inst, disasm_buffer, 128, ins_addr, nullptr, nullptr);
 
-  xed_decoded_inst_dump(&xed_inst, disasm_buffer, 1000);
-  this->disassemble = parse_disassembled_instruction_from_buffer(disasm_buffer);
+  if (disasm_err == 0) throw std::logic_error("instruction disassembling error");
+
+  this->disassemble = std::string(disasm_buffer);
+
+//  xed_decoded_inst_dump(&xed_inst, disasm_buffer, 1000);
+//  this->disassemble = parse_disassembled_instruction_from_buffer(disasm_buffer);
 
   this->category = xed_decoded_inst_get_category(&xed_inst);
   this->is_call = (this->category == XED_CATEGORY_CALL);
@@ -176,4 +182,17 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
 
   this->static_load_addresses = std::get<MEM_LOAD_STATIC_ADDRS>(mem_access_info);
   this->static_store_addresses = std::get<MEM_STORE_STATIC_ADDRS>(mem_access_info);
+
+  auto ins_operand_num = xed_decoded_inst_noperands(&xed_inst);
+  auto inst = xed_decoded_inst_inst(&xed_inst);
+  for (auto i = decltype(ins_operand_num){0}; i < ins_operand_num; ++i) {
+    auto operand = xed_inst_operand(inst, i);
+    auto operand_name = xed_operand_name(operand);
+
+    if (operand_name == XED_OPERAND_IMM0) {
+      this->is_immediate_read = true;
+      this->immediate_read_value = xed_decoded_inst_get_unsigned_immediate(&xed_inst);
+      break;
+    }
+  }
 }
