@@ -28,6 +28,7 @@ auto save_basic_block_tree_to_dot_file = save_basic_block_graph_to_dot_file<fals
 auto add_trace_into_basic_block_cfg    (const p_instructions_t& trace) -> void;
 auto add_trace_into_basic_block_tree   (const p_instructions_t& trace) -> void;
 
+auto initialize_movf_identifiers       (uint32_t target, uint32_t branch) -> void;
 auto construct_movf_basic_block_cfg    (const p_instructions_t& prog)  -> void;
 auto save_movf_basic_block_cfg_to_file (const std::string& filename)   -> void;
 

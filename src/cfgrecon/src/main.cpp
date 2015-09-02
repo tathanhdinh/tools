@@ -9,7 +9,7 @@
 int main(int argc, char* argv[])
 {
   try {
-    if (argc < 4) throw std::logic_error("please run as: cfgrecon mode[trace/tree/cfg] protobuf_trace_file(s) output_file(s)");
+    if (argc < 4) throw std::logic_error("please run as: cfgrecon mode[trace/tree/cfg/movf] protobuf_trace_file(s) output_file(s)");
 
     if (strcmp(argv[1], "cfg") == 0 || strcmp(argv[1], "tree") == 0) {
       auto cfg_or_tree = true;
@@ -40,12 +40,7 @@ int main(int argc, char* argv[])
       tfm::printfln("\nelapsed time: %d secs", (ending_time - starting_time) / CLOCKS_PER_SEC);
     }
     else {
-      if (strcmp(argv[1], "movf")) {
-
-      }
-      else {
-        if (strcmp(argv[1], "trace") != 0) throw std::logic_error("mode must be trace, tree, or cfg");
-
+      if (strcmp(argv[1], "trace") == 0) {
         auto pb_trace_file = std::string(argv[2]);
         auto output_trace_file = std::string(argv[3]);
 
@@ -60,6 +55,19 @@ int main(int argc, char* argv[])
   //        save_chunks_io_to_file(output_mem_access_file);
   //        save_memory_state_to_file(output_mem_access_file);
         }
+      }
+      else {
+        if (strcmp(argv[1], "movf") != 0) throw std::logic_error("mode must be trace, tree, cfg, or movf");
+
+        initialize_movf_identifiers(0x80e1cbc, 0x80d1c90);
+
+        auto pb_trace_file = std::string(argv[2]);
+        auto trace = parse_instructions_from_file(pb_trace_file);
+
+        construct_movf_basic_block_cfg(trace);
+
+        auto movf_bb_cfg_file = std::string(argv[argc - 1]);
+        save_movf_basic_block_cfg_to_file(movf_bb_cfg_file);
       }
     }
   }

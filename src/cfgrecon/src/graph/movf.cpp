@@ -7,6 +7,7 @@
 
 #include "../tinyformat.h"
 
+extern p_instructions_t trace;
 extern map_address_instruction_t cached_ins_at_addr;
 
 static bb_graph_t internal_movf_bb_cfg;
@@ -30,28 +31,60 @@ static auto is_bb_starting (p_instruction_t ins_a, p_instruction_t ins_b) -> boo
 
 static auto extract_bb_from_trace (p_instructions_t& trace) -> tr_vertices_t
 {
-  auto new_bb = tr_vertices_t{};
-  new_bb.push_back(trace.at(0)->address); new_bb.push_back(trace.at(1)->address);
+  auto current_bb = tr_vertices_t{};
 
-  auto last_bb_ins_idx = uint32_t{2};
-  try {
-    for (;;) {
-      auto ins_a = trace.at(last_bb_ins_idx); last_bb_ins_idx++;
-      auto ins_b = trace.at(last_bb_ins_idx); last_bb_ins_idx++;
-      if (is_bb_starting(ins_a, ins_b)) {
-        last_bb_ins_idx -= 2;
-        throw std::logic_error("new basic block reached");
-      }
+  auto last_bb_ins_idx = uint32_t{0};
+  auto lower_idx_bound = trace.size() - 1;
+
+  auto new_bb_reached = false;
+  for (; last_bb_ins_idx < lower_idx_bound; ++last_bb_ins_idx) {
+    auto ins_a = trace.at(last_bb_ins_idx);
+    auto ins_b = trace.at(last_bb_ins_idx + 1);
+
+    tfm::printfln("0x%x", ins_a->address);
+    if (is_bb_starting(ins_a, ins_b) && (last_bb_ins_idx > 0)) {
+      tfm::printfln("0x%x 0x%x", ins_a->address, ins_b->address);
+      new_bb_reached = true;
+      break;
     }
   }
-  catch (const std::exception& expt) {
-    for (auto idx = decltype(last_bb_ins_idx){2}; idx < last_bb_ins_idx; ++idx) {
-      new_bb.push_back(trace.at(idx)->address);
-    }
-    trace.erase(std::begin(trace), std::begin(trace) + last_bb_ins_idx);
-  }
 
-  return new_bb;
+  if (new_bb_reached) {
+    last_bb_ins_idx -= 1;
+    tfm::printfln("new bb reached %d", last_bb_ins_idx);
+  }
+  else last_bb_ins_idx += 1;
+
+  for (auto idx = uint32_t{0}; idx <= last_bb_ins_idx; ++idx) {
+    current_bb.push_back(trace.at(idx)->address);
+  }
+  trace.erase(std::begin(trace), std::begin(trace) + last_bb_ins_idx);
+
+  std::terminate();
+
+//  try {
+//    for (;; ) {
+//      auto ins_a = trace.at(last_bb_ins_idx);
+//      auto ins_b = trace.at(last_bb_ins_idx + 1);
+
+//      if (is_bb_starting(ins_a, ins_b) && (last_bb_ins_idx > 2)) {
+//        last_bb_ins_idx -= 2;
+//        throw std::logic_error("new basic block parsed");
+//      }
+
+//      last_bb_ins_idx++;
+//    }
+//  }
+//  catch (const std::exception& expt) {
+//    tfm::printfln("%s", expt.what());
+
+//    for (auto idx = decltype(last_bb_ins_idx){0}; idx < last_bb_ins_idx; ++idx) {
+//      new_bb.push_back(trace.at(idx)->address);
+//    }
+//    trace.erase(std::begin(trace), std::begin(trace) + last_bb_ins_idx);
+//  }
+
+  return current_bb;
 }
 
 static auto extract_basic_blocks_from_program (const p_instructions_t& prog) -> void
@@ -61,7 +94,9 @@ static auto extract_basic_blocks_from_program (const p_instructions_t& prog) -> 
 
   while (local_trace.size() > 2) {
     auto new_bb = extract_bb_from_trace(local_trace);
+
     boost::add_vertex(bb_vertex_t(bb_idx, new_bb), internal_movf_bb_cfg);
+    bb_idx++;
   }
 
   return;
@@ -74,7 +109,7 @@ static auto is_branching (uint32_t addr_a, uint32_t addr_b) -> bool
   auto ins_b = cached_ins_at_addr[addr_b];
 
   auto result = false;
-  if (ins_a->is_immediate_read && ins_a->immediate_read_value == branch_identifier) {
+  if (ins_a->is_immediate_read) {
     if (ins_b->is_memory_write && !ins_b->static_store_addresses.empty()) {
       auto store_addr = ins_b->static_store_addresses.front();
       if (store_addr == branch_identifier) result = true;
@@ -88,14 +123,14 @@ static auto is_branching (uint32_t addr_a, uint32_t addr_b) -> bool
 static auto branch_target (uint32_t addr_a, uint32_t addr) -> uint32_t
 {
   auto target = cached_ins_at_addr[addr_a]->immediate_read_value;
-  if ((target & 0x10000000) != 0x0) target &= 0x00ffffff;
+  if ((target & 0xF0000000) != 0x0) target &= 0x00ffffff;
   return target;
 }
 
 
 static auto parse_target_branches_from_bb (const tr_vertices_t& bb) -> std::vector<uint32_t>
 {
-  auto target_addrs = std::vector<uint32_t>{};
+  auto branch_addrs = std::vector<uint32_t>{};
 
   try {
     auto target_addr = uint32_t{0};
@@ -104,16 +139,17 @@ static auto parse_target_branches_from_bb (const tr_vertices_t& bb) -> std::vect
     for (;;) {
       auto addr_a = bb.at(ins_idx); ++ins_idx;
       auto addr_b = bb.at(ins_idx); ++ins_idx;
+
       if (is_branching(addr_a, addr_b)) {
         target_addr = branch_target(addr_a, addr_b);
-        target_addrs.push_back(target_addr);
+        branch_addrs.push_back(target_addr);
       }
     }
   }
   catch (const std::exception& expt) {
   }
 
-  return target_addrs;
+  return branch_addrs;
 }
 
 
@@ -222,10 +258,17 @@ static auto write_cfg_edge (std::ostream& label, bb_edge_desc_t edge_desc) -> vo
 
 /* ===================================== exported functions ===================================== */
 
+auto initialize_movf_identifiers (uint32_t target, uint32_t branch) -> void
+{
+  target_identifier = target;
+  branch_identifier = branch;
+  return;
+}
+
 auto construct_movf_basic_block_cfg (const p_instructions_t& prog) -> void
 {
   extract_basic_blocks_from_program(prog);
-  extract_branching_between_basic_blocks();
+//  extract_branching_between_basic_blocks();
   return;
 }
 
@@ -234,7 +277,7 @@ auto save_movf_basic_block_cfg_to_file (const std::string& filename) -> void
   std::ofstream output_file(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
 
   boost::write_graphviz(output_file, internal_movf_bb_cfg,
-                        std::bind(write_graph_thumbnail_vertex, std::placeholders::_1, std::placeholders::_2),
+                        std::bind(write_graph_vertex, std::placeholders::_1, std::placeholders::_2),
                         std::bind(write_cfg_edge, std::placeholders::_1, std::placeholders::_2));
 
   output_file.close();
