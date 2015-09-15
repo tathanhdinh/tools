@@ -25,9 +25,10 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
   auto xed_inst = xed_decoded_inst_t{};
   xed_decoded_inst_set_mode(&xed_inst, XED_MACHINE_MODE_LEGACY_32, XED_ADDRESS_WIDTH_32b);
 
+//  tfm::printfln("0x%x", ins_addr);
   auto decode_err = xed_decode(&xed_inst, XED_STATIC_CAST(const xed_uint8_t*, opcode_buffer), opcode_buffer_size);
 
-  if (decode_err != XED_ERROR_NONE) throw std::logic_error("instruction decode error");
+  if (decode_err != XED_ERROR_NONE) throw std::logic_error("decoding instruction failed");
 
   std::fill_n(disasm_buffer, 1000, 0);
 //  xed_decoded_inst_dump_xed_format(&xed_inst, disasm_buffer, 118, ins_addr);
@@ -38,6 +39,7 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
   this->disassemble = parse_disassembled_instruction_from_buffer(disasm_buffer);
 
   this->category = xed_decoded_inst_get_category(&xed_inst);
+//  tfm::printfln("%s category %d", this->disassemble, this->category);
   this->is_call = (this->category == XED_CATEGORY_CALL);
   this->is_branch = (this->category == XED_CATEGORY_COND_BR);
   this->is_ret = (this->category == XED_CATEGORY_RET);

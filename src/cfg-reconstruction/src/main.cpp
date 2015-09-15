@@ -31,6 +31,8 @@ int main(int argc, char* argv[])
       add_trace_fun(trace);
     }
 
+    tfm::printfln("instructions: %d, conditional branches: %d", get_number_of_instructions(), get_number_of_conditional_branches());
+
     construct_fun();
 
     auto bb_cfg_file = std::string(argv[argc - 1]);

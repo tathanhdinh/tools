@@ -46,7 +46,9 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
         auto opcode_size = pb_inst_opcode.size();
         auto opcode_buffer = pb_inst_opcode.data();
 
+//        tfm::printfln("start");
         cached_ins_at_addr[ins_addr] = std::make_shared<instruction>(ins_addr, opcode_buffer, opcode_size);
+//        tfm::printfln("end");
       }
 
       trace.push_back(cached_ins_at_addr[ins_addr]);
@@ -62,6 +64,7 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
 //      }
     }
   }
+//  tfm::printfln("number of cached instructions: %d", cached_ins_at_addr.size());
 
   inst_chunk.Clear();
 
@@ -137,5 +140,18 @@ auto parse_instructions_from_file (const std::string& filename) -> const p_instr
   return trace;
 }
 
+auto get_number_of_instructions () -> uint32_t
+{
+  return cached_ins_at_addr.size();
+}
 
+auto get_number_of_conditional_branches () -> uint32_t
+{
+  auto cond_br_num = uint32_t{0};
+  for (const auto& addr_inst : cached_ins_at_addr) {
+    auto inst = std::get<1>(addr_inst);
+    if (inst->is_branch) cond_br_num++;
+  }
+  return cond_br_num;
+}
 
