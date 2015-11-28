@@ -8,6 +8,8 @@
 
 int main(int argc, char* argv[])
 {
+  auto starting_time = std::clock();
+
   try {
     if (argc < 4) throw std::logic_error("please run as: cfgrecon mode[trace/tree/cfg/movf] protobuf_trace_file(s) output_file(s)");
 
@@ -19,8 +21,6 @@ int main(int argc, char* argv[])
       auto add_trace_fun = cfg_or_tree ? add_trace_into_basic_block_cfg : add_trace_into_basic_block_tree;
       auto construct_fun = cfg_or_tree ? construct_basic_block_cfg : construct_basic_block_tree;
       auto save_to_file_fun = cfg_or_tree ? save_basic_block_cfg_to_dot_file : save_basic_block_tree_to_dot_file;
-
-      auto starting_time = std::clock();
 
       auto trace_file_max_idx = argc - 1;
       for (auto idx = 2; idx < trace_file_max_idx; ++idx) {
@@ -35,9 +35,6 @@ int main(int argc, char* argv[])
 
       auto bb_cfg_file = std::string(argv[argc - 1]);
       save_to_file_fun(bb_cfg_file);
-
-      auto ending_time = std::clock();
-      tfm::printfln("\nelapsed time: %d secs", (ending_time - starting_time) / CLOCKS_PER_SEC);
     }
     else {
       if (strcmp(argv[1], "trace") == 0) {
@@ -75,7 +72,10 @@ int main(int argc, char* argv[])
     tfm::printfln("%s", expt.what());
   }
 
+  auto ending_time = std::clock();
+  tfm::printfln("\nelapsed time: %d secs", (ending_time - starting_time) / CLOCKS_PER_SEC);
+
   return 0;
-  (void)argc; (void)argv; // compiler pacifying
+//  (void)argc; (void)argv; // compiler pacifying
 }
 

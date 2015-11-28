@@ -1,7 +1,7 @@
 #ifndef TRACE_H
 #define TRACE_H
 
-//#include "../type/instruction.h"
+#include "../type/instruction.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -36,7 +36,7 @@ struct syscall_t
 struct sys_read_info_t : syscall_t<CAP_SYS_READ>
 {
   int                      file_desc;
-  uint32_t                  buffer_addr;
+  ADDRINT                 buffer_addr;
   size_t                   buffer_length;
   size_t                   read_length;
   std::shared_ptr<uint8_t> buffer;
@@ -45,7 +45,7 @@ struct sys_read_info_t : syscall_t<CAP_SYS_READ>
 struct sys_write_info_t : syscall_t<CAP_SYS_WRITE>
 {
   int                      file_desc;
-  uint32_t                  buffer_addr;
+  ADDRINT                  buffer_addr;
   size_t                   buffer_length;
   size_t                   write_length;
   std::shared_ptr<uint8_t> buffer;
@@ -67,7 +67,7 @@ struct sys_other_info_t : syscall_t<CAP_SYS_OTHER>
 
 struct call_info_t
 {
-  uint32_t     called_fun_addr;
+  ADDRINT     called_fun_addr;
   std::string called_fun_name;
   bool        is_traced;
 };
@@ -82,7 +82,7 @@ typedef boost::variant
   > concrete_info_t;
 
 typedef std::tuple<
-  uint32_t,        // address of instructions
+  ADDRINT,        // address of instructions
   uint32_t,       // id of containing thread
   dyn_regs_t,     // read registers
   dyn_regs_t,     // write registers

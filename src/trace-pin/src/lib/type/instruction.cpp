@@ -63,5 +63,9 @@ instruction::instruction(const INS& ins)
   this->is_memory_write   = INS_IsMemoryWrite(ins);
   this->has_memory_read_2 = INS_HasMemoryRead2(ins);
 
-//  tfm::printfln("instruction initialized %s : %s", StringFromAddrint(this->address), this->disassemble);
+//  tfm::printfln("0x%x  %s", this->address, this->disassemble);
+//  for (auto i = uint32_t{0}; i < this->opcode_size; ++i) {
+//    tfm::printf("0x%x ", *(reinterpret_cast<uint8_t*>(this->address + i)));
+//  }
+//  tfm::printfln("");
 }

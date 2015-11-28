@@ -218,6 +218,8 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
   auto ins_address = std::get<INS_ADDRESS>(ins);
   auto p_static_ins = cached_ins_at_addr[ins_address];
 
+//  tfm::printfln("0x%x  %s", ins_address, p_static_ins->disassemble);
+
   // add a new body as an instruction
   auto p_ins_body = chunk.add_body();
   p_ins_body->set_typeid_(trace_format::INSTRUCTION);
@@ -372,7 +374,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
   auto add_syscall_concrete_info = [&p_instruction, &ins](const concrete_info_t& syscall_info) -> void {
 
     auto syscall_idx = syscall_info.which();
-    assert((0 <= syscall_idx) && (syscall_idx <= 3));
+    ASSERTX((0 <= syscall_idx) && (syscall_idx <= 3));
 
     auto concrete_info = p_instruction->add_concrete_info();
     concrete_info->set_typeid_(trace_format::SYSCALL);
@@ -472,7 +474,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
   };
 
   auto add_call_concrete_info = [&p_instruction, &ins](const concrete_info_t& call_info) -> void {
-    assert(call_info.which() == 4); // magic value from concrete_info_t in trace.h
+    ASSERTX(call_info.which() == 4); // magic value from concrete_info_t in trace.h
 
     auto call_real_info = boost::get<call_info_t>(call_info);
 
@@ -552,11 +554,11 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
 }
 
 
-auto convert_trace_to_byte_segments (trace_format::trace_t& captured_trace, uint32_t segment_size) -> std::string
-{
-  auto trace_string = std::string("");
-  return trace_string;
-}
+//auto convert_trace_to_byte_segments (trace_format::trace_t& captured_trace, uint32_t segment_size) -> std::string
+//{
+//  auto trace_string = std::string("");
+//  return trace_string;
+//}
 
 
 auto flush_trace_in_protobuf_format () -> void

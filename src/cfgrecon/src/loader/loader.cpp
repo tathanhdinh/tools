@@ -37,7 +37,7 @@ static auto get_register_info (p_instruction_t ins, const trace_format::ins_con_
   auto reg_name = pb_reg_info.name();
 
   auto pb_reg_value = pb_reg_info.value();
-  auto reg_value = uint32_t{0};
+  auto reg_value = ADDRINT{0};
 
   switch (pb_reg_value.typeid_()) {
   case trace_format::BIT8:
@@ -50,6 +50,10 @@ static auto get_register_info (p_instruction_t ins, const trace_format::ins_con_
 
   case trace_format::BIT32:
     reg_value = pb_reg_value.value_32();
+    break;
+
+  case trace_format::BIT64:
+    reg_value = pb_reg_value.value_64();
     break;
 
   default:
@@ -108,11 +112,16 @@ static auto get_memory_info (p_instruction_t ins, const trace_format::ins_con_in
   auto& ins_mem = load_or_store ? ins->load_memory : ins->store_memmory;
 
   const auto& pb_mem_addr = pb_mem_info.address();
-  assert(pb_mem_addr.has_value_32());
-  auto mem_addr = pb_mem_addr.value_32();
+  assert(pb_mem_addr.has_value_32() || pb_mem_addr.has_value_64());
+
+//  auto mem_addr = ADDRINT{0};
+//  if (pb_mem_addr.has_value_32()) mem_addr = pb_mem_addr.value_32();
+//  else mem_addr
+
+  auto mem_addr = pb_mem_addr.has_value_32() ? pb_mem_addr.value_32() : pb_mem_addr.value_64();
 
   const auto& pb_mem_val = pb_mem_info.value();
-  auto mem_val = uint32_t{0};
+  auto mem_val = ADDRINT{0};
 
   switch (pb_mem_val.typeid_()) {
     case trace_format::BIT8:
@@ -125,6 +134,10 @@ static auto get_memory_info (p_instruction_t ins, const trace_format::ins_con_in
 
     case trace_format::BIT32:
       mem_val = pb_mem_val.value_32();
+      break;
+
+    case trace_format::BIT64:
+      mem_val = pb_mem_val.value_64();
       break;
 
     default:
@@ -345,10 +358,10 @@ auto save_trace_to_file (const std::string& filename) -> void
     for (const auto& inst : trace) {
       tfm::format(trace_file, "0x%x  %-40s", inst->address, inst->disassemble);
 
-//      save_register_info<REG_READ>(inst, trace_file);
-//      save_register_info<REG_WRITE>(inst, trace_file);
-//      save_memory_info<MEM_LOAD>(inst, trace_file);
-//      save_memory_info<MEM_STORE>(inst, trace_file);
+      save_register_info<REG_READ>(inst, trace_file);
+      save_register_info<REG_WRITE>(inst, trace_file);
+      save_memory_info<MEM_LOAD>(inst, trace_file);
+      save_memory_info<MEM_STORE>(inst, trace_file);
 
       tfm::format(trace_file, "\n");
     }
@@ -364,7 +377,7 @@ auto save_trace_to_file (const std::string& filename) -> void
 }
 
 extern auto split_trace_into_chunks (const p_instructions_t& trace) -> std::vector<p_instructions_t>;
-extern auto split_trace_into_chunks (const p_instructions_t& trace, uint32_t start_addr) -> std::vector<p_instructions_t>;
+extern auto split_trace_into_chunks (const p_instructions_t& trace, ADDRINT start_addr) -> std::vector<p_instructions_t>;
 
 auto save_chunks_to_file (const std::string& filename) -> void
 {
