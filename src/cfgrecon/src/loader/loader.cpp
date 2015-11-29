@@ -167,7 +167,7 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
       const auto& pb_inst_info = body.instruction();
 
       const auto& pb_inst_addr = pb_inst_info.address();
-      auto ins_addr = pb_inst_addr.value_32();
+      auto ins_addr = pb_inst_addr.has_value_32() ? pb_inst_addr.value_32() : pb_inst_addr.value_64();
 
       if (cached_ins_at_addr.find(ins_addr) == std::end(cached_ins_at_addr)) {
         const auto& pb_inst_opcode = pb_inst_info.opcode();

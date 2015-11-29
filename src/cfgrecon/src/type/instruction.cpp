@@ -113,6 +113,7 @@ static auto get_memory_access_info (const xed_decoded_inst_t* p_inst) -> std::tu
 
 instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode_buffer_size)
 {
+//  tfm::printfln("0x%x %d", ins_addr, opcode_buffer_size);
   this->address = ins_addr;
 
   auto xed_inst = xed_decoded_inst_t{};
@@ -195,4 +196,6 @@ instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode
       break;
     }
   }
+
+//  tfm::printfln("haha\n");
 }
