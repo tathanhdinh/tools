@@ -7,6 +7,8 @@
 #include <fstream>
 #include <locale>
 
+inst_arch_t instruction::arch = IA32_INST_ARCH;
+
 p_instructions_t trace = p_instructions_t{};
 map_address_instruction_t cached_ins_at_addr = map_address_instruction_t();
 
@@ -21,6 +23,13 @@ static auto parse_trace_header () -> void
   auto header_buffer = std::shared_ptr<char>(new char[header_size], std::default_delete<char[]>());
   protobuf_trace_file.read(header_buffer.get(), header_size);
   if (!protobuf_trace_file) throw std::range_error("reading header error");
+
+  auto trace_header = trace_format::header_t();
+  trace_header.Clear();
+
+  if (!trace_header.ParseFromArray(header_buffer.get(), header_size)) throw std::domain_error("parse header error");
+
+  instruction::arch = (trace_header.architecture() == trace_format::X86) ? IA32_INST_ARCH : IA32E_INST_ARCH;
 
   return;
 }

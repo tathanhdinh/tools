@@ -117,16 +117,19 @@ instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode
   this->address = ins_addr;
 
   auto xed_inst = xed_decoded_inst_t{};
-  xed_decoded_inst_set_mode(&xed_inst, XED_MACHINE_MODE_LEGACY_32, XED_ADDRESS_WIDTH_32b);
+  if (this->arch == IA32_INST_ARCH) {
+    xed_decoded_inst_set_mode(&xed_inst, XED_MACHINE_MODE_LEGACY_32, XED_ADDRESS_WIDTH_32b);
+  }
+  else {
+    xed_decoded_inst_set_mode(&xed_inst, XED_MACHINE_MODE_LONG_64, XED_ADDRESS_WIDTH_64b);
+  }
 
   auto decode_err = xed_decode(&xed_inst, XED_STATIC_CAST(const xed_uint8_t*, opcode_buffer), opcode_buffer_size);
-
   if (decode_err != XED_ERROR_NONE) throw std::logic_error("instruction decoding error");
 
   std::fill_n(disasm_buffer, 1000, 0);
   xed_decoded_inst_dump_xed_format(&xed_inst, disasm_buffer, 128, ins_addr);
   auto disasm_err = xed_format_context(XED_SYNTAX_INTEL, &xed_inst, disasm_buffer, 128, ins_addr, nullptr, nullptr);
-
   if (disasm_err == 0) throw std::logic_error("instruction disassembling error");
 
   this->disassemble = std::string(disasm_buffer);

@@ -13,11 +13,19 @@ extern "C" {
 #include <vector>
 #include <map>
 
+enum inst_arch_t
+{
+  IA32_INST_ARCH  = 0,
+  IA32E_INST_ARCH = 1
+};
+
 class instruction
 {
 //public:
 //  static const xed_machine_mode_enum_t machine_mode = XED_MACHINE_MODE_LEGACY_32;
 //  static const xed_address_width_enum_t address_with = XED_ADDRESS_WIDTH_32b;
+public:
+  static inst_arch_t arch;
 
  public:
   ADDRINT    address;
