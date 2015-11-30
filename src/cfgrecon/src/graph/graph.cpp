@@ -502,14 +502,14 @@ auto save_basic_block_graph_to_dot_file (const std::string& filename) -> void
   std::ofstream output_file(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
 
   // write thumbnail basic block graph (for sophisticated program: basic block too long to print out)
-  boost::write_graphviz(output_file, graph,
-                        std::bind(write_graph_thumbnail_vertex<cfg_or_tree>, std::placeholders::_1, std::placeholders::_2),
-                        std::bind(write_cfg_edge, std::placeholders::_1, std::placeholders::_2));
+//  boost::write_graphviz(output_file, graph,
+//                        std::bind(write_graph_thumbnail_vertex<cfg_or_tree>, std::placeholders::_1, std::placeholders::_2),
+//                        std::bind(write_cfg_edge, std::placeholders::_1, std::placeholders::_2));
 
   // write normal basic block graph
-//  boost::write_graphviz(output_file, graph,
-//                        std::bind(write_graph_vertex<cfg_or_tree>, std::placeholders::_1, std::placeholders::_2),
-//                        std::bind(write_cfg_edge, std::placeholders::_1, std::placeholders::_2));
+  boost::write_graphviz(output_file, graph,
+                        std::bind(write_graph_vertex<cfg_or_tree>, std::placeholders::_1, std::placeholders::_2),
+                        std::bind(write_cfg_edge, std::placeholders::_1, std::placeholders::_2));
 
   output_file.close();
   return;
