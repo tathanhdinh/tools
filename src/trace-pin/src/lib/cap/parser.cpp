@@ -6,18 +6,16 @@
 #include "../tinyformat.h"
 
 #include <fstream>
-#include <cassert>
 
+//static auto protobuf_trace = trace_format::trace_t();
 static auto protobuf_chunk = trace_format::chunk_t();
 static std::ofstream protobuf_trace_file;
 static auto trace_length = uint32_t{0};
 
-//extern auto normalize_hex_string (const std::string& input) -> std::string;
-
 static auto real_value_of_reg (const dyn_reg_t& reg_val) -> ADDRINT
 {
   auto reg_size = REG_Size(std::get<0>(reg_val));
-  assert((reg_size == 1) || (reg_size == 2) || (reg_size == 4) || (reg_size == 8));
+  ASSERTX((reg_size == 1) || (reg_size == 2) || (reg_size == 4) || (reg_size == 8));
 
   auto real_val = ADDRINT{0};
   switch (reg_size) {
@@ -44,7 +42,7 @@ static auto real_value_of_reg (const dyn_reg_t& reg_val) -> ADDRINT
 static auto real_value_of_mem (const std::pair<dyn_mem_t, ADDRINT>& mem_val) -> ADDRINT
 {
   auto mem_size = std::get<1>(std::get<0>(mem_val));
-  assert((mem_size == 1) || (mem_size == 2) || (mem_size == 4) || (mem_size == 8));
+  ASSERTX((mem_size == 1) || (mem_size == 2) || (mem_size == 4) || (mem_size == 8));
 
   auto real_val = ADDRINT{0};
   switch (mem_size) {
@@ -75,31 +73,29 @@ auto save_in_simple_format (std::ofstream& output_stream) -> void
   std::for_each(trace.begin(), trace.end(), [&output_stream](decltype(trace)::const_reference ins)
   {
     auto ins_addr = std::get<INS_ADDRESS>(ins);
-    tfm::format(output_stream, "%-12s %-40s", normalize_hex_string(StringFromAddrint(ins_addr)),
+    tfm::format(output_stream, "0x%-12x %-40s", ins_addr,
                 cached_ins_at_addr[ins_addr]->disassemble);
 
     tfm::format(output_stream, "  RR: ");
     for (const auto& reg_val : std::get<INS_READ_REGS>(ins)) {
-      tfm::format(output_stream, "[%s:%s]", REG_StringShort(std::get<0>(reg_val)),
-                  normalize_hex_string(StringFromAddrint(real_value_of_reg(reg_val))));
+      tfm::format(output_stream, "[%s:0x%x]", REG_StringShort(std::get<0>(reg_val)), real_value_of_reg(reg_val));
     }
 
     tfm::format(output_stream, "  RW: ");
     for (const auto& reg_val : std::get<INS_WRITE_REGS>(ins)) {
-      tfm::format(output_stream, "[%s:%s]", REG_StringShort(std::get<0>(reg_val)),
-                  normalize_hex_string(StringFromAddrint(real_value_of_reg(reg_val))));
+      tfm::format(output_stream, "[%s:0x%x]", REG_StringShort(std::get<0>(reg_val)), real_value_of_reg(reg_val));
     }
 
     tfm::format(output_stream, "  MR: ");
     for (const auto & mem_val : std::get<INS_READ_MEMS>(ins)) {
-      tfm::format(output_stream, "[%s:%d:%s]", normalize_hex_string(StringFromAddrint(std::get<0>(std::get<0>(mem_val)))),
-                  std::get<1>(std::get<0>(mem_val)), normalize_hex_string(StringFromAddrint(real_value_of_mem(mem_val))));
+      tfm::format(output_stream, "[0x%x:%d:0x%x]", std::get<0>(std::get<0>(mem_val)), std::get<1>(std::get<0>(mem_val)),
+                  real_value_of_mem(mem_val));
     }
 
     tfm::format(output_stream, "  MW: ");
     for (const auto & mem_val : std::get<INS_WRITE_MEMS>(ins)) {
-      tfm::format(output_stream, "[%s:%d:%s]", normalize_hex_string(StringFromAddrint(std::get<0>(std::get<0>(mem_val)))),
-                  std::get<1>(std::get<0>(mem_val)), normalize_hex_string(StringFromAddrint(real_value_of_mem(mem_val))));
+      tfm::format(output_stream, "[0x%x:%d:0x%x]", std::get<0>(std::get<0>(mem_val)), std::get<1>(std::get<0>(mem_val)),
+                  real_value_of_mem(mem_val));
     }
 
     if (cached_ins_at_addr[ins_addr]->is_syscall) {
@@ -117,20 +113,18 @@ auto save_in_simple_format (std::ofstream& output_stream) -> void
       case 1: /* SYS_READ */
       {
         auto read_concret_info = boost::get<sys_read_info_t>(concret_info);
-        tfm::format(output_stream, "  ID: %d[%s:%d:%d:%c]", sys_read_info_t::id,
-                    normalize_hex_string(StringFromAddrint(read_concret_info.buffer_addr)),
-                    read_concret_info.buffer_length, read_concret_info.read_length,
-                    read_concret_info.buffer.get()[0]);
+        tfm::format(output_stream, "  ID: %d[0x%x:%d:%d:%c]", sys_read_info_t::id,
+                    read_concret_info.buffer_addr, read_concret_info.buffer_length,
+                    read_concret_info.read_length, read_concret_info.buffer.get()[0]);
         break;
       }
 
       case 2: /* SYS_WRITE */
       {
         auto write_concret_info = boost::get<sys_write_info_t>(concret_info);
-        tfm::format(output_stream, " ID: %d[%s:%d:%d:%c]", sys_open_info_t::id,
-                    normalize_hex_string(StringFromAddrint(write_concret_info.buffer_addr)),
-                    write_concret_info.buffer_length, write_concret_info.write_length,
-                    write_concret_info.buffer.get()[0]);
+        tfm::format(output_stream, " ID: %d[0x%x:%d:%d:%c]", sys_open_info_t::id,
+                    write_concret_info.buffer_addr, write_concret_info.buffer_length,
+                    write_concret_info.write_length, write_concret_info.buffer.get()[0]);
         break;
       }
 
@@ -167,6 +161,7 @@ static auto set_trace_header () -> void
     break;
   }
 
+
   auto header_size = trace_header.ByteSize();
   auto header_buffer = std::shared_ptr<char>(new char[header_size], std::default_delete<char[]>());
 
@@ -176,14 +171,22 @@ static auto set_trace_header () -> void
   protobuf_trace_file.write(reinterpret_cast<const char*>(&header_size), sizeof(decltype(header_size)));
   protobuf_trace_file.write(header_buffer.get(), header_size);
 
-//  auto trace_segment = std::string();
-//  trace_header.SerializeToString(&trace_segment);
+  
+  /*auto header_size = trace_header.ByteSize();
+  protobuf_trace_file.write(reinterpret_cast<const char*>(&header_size), sizeof(decltype(header_size)));
+  protobuf_chunk.SerializeToOstream(&protobuf_trace_file);*/
 
-//  trace_header.Clear();
+  trace_header.Clear();
+  protobuf_chunk.Clear();
 
-//  uint32_t segment_length = trace_segment.length();
-//  protobuf_trace_file.write(reinterpret_cast<const char*>(&segment_length), sizeof(uint32_t));
-//  protobuf_trace_file.write(trace_segment.data(), segment_length);
+  /*auto trace_segment = std::string();
+  trace_header.SerializeToString(&trace_segment);
+
+  trace_header.Clear();
+
+  uint32_t segment_length = trace_segment.length();
+  protobuf_trace_file.write(reinterpret_cast<const char*>(&segment_length), sizeof(uint32_t));
+  protobuf_trace_file.write(trace_segment.data(), segment_length);*/
 
   return;
 }
@@ -230,7 +233,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
 
   auto p_ins_addr = p_instruction->mutable_address();
 
-  static_assert(((sizeof(ADDRINT) == 4) || (sizeof(ADDRINT) == 8)), "address size must be 32 or 64");
+  static_assert(((sizeof(ADDRINT) == 4) || (sizeof(ADDRINT) == 8)), "address size must be 32 or 64 bit");
 
   switch (sizeof(ADDRINT)) {
   case 4:
@@ -299,7 +302,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
   enum MEM_T { MEM_READ = 0, MEM_WRITE = 1 };
   auto add_mems = [&p_instruction, &ins](MEM_T mem_type) -> void
   {
-    assert((mem_type == MEM_READ) || (mem_type == MEM_WRITE));
+    ASSERTX((mem_type == MEM_READ) || (mem_type == MEM_WRITE));
 
     auto mems = (mem_type == MEM_READ) ? std::get<INS_READ_MEMS>(ins) : std::get<INS_WRITE_MEMS>(ins);
 
@@ -372,7 +375,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
   auto add_syscall_concrete_info = [&p_instruction, &ins](const concrete_info_t& syscall_info) -> void {
 
     auto syscall_idx = syscall_info.which();
-    assert((0 <= syscall_idx) && (syscall_idx <= 3));
+    ASSERTX((0 <= syscall_idx) && (syscall_idx <= 3));
 
     auto concrete_info = p_instruction->add_concrete_info();
     concrete_info->set_typeid_(trace_format::SYSCALL);
@@ -472,7 +475,7 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
   };
 
   auto add_call_concrete_info = [&p_instruction, &ins](const concrete_info_t& call_info) -> void {
-    assert(call_info.which() == 4); // magic value from concrete_info_t in trace.h
+    ASSERTX(call_info.which() == 4); // magic value from concrete_info_t in trace.h
 
     auto call_real_info = boost::get<call_info_t>(call_info);
 
@@ -481,6 +484,8 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
 
     auto call_concrete_info = concrete_info->mutable_call();
     call_concrete_info->set_func_name(call_real_info.called_fun_name);
+
+//    tfm::printfln("called function: %s", call_real_info.called_fun_name);
 
     call_concrete_info->set_is_traced(call_real_info.is_traced);
 
@@ -562,6 +567,7 @@ auto convert_trace_to_byte_segments (trace_format::trace_t& captured_trace, uint
 auto flush_trace_in_protobuf_format () -> void
 {
   if (!trace.empty()) {
+    tfm::format(std::cerr, "flush %d instructions\n", trace.size());
 //    tfm::printfln("flush %d instructions", trace.size());
 
     trace_length += trace.size();
@@ -571,6 +577,7 @@ auto flush_trace_in_protobuf_format () -> void
       add_trace_instruction(protobuf_chunk, ins);
     }
 
+
     auto chunk_size = protobuf_chunk.ByteSize();
     auto chunk_buffer = std::shared_ptr<char>(new char[chunk_size], std::default_delete<char[]>());
 
@@ -579,25 +586,22 @@ auto flush_trace_in_protobuf_format () -> void
     protobuf_trace_file.write(reinterpret_cast<const char*>(&chunk_size), sizeof(decltype(chunk_size)));
     protobuf_trace_file.write(chunk_buffer.get(), chunk_size);
 
-//    tfm::printfln("saved chunk size: %d bytes", chunk_size);
-
-//    tfm::printfln("saved chunk size: %d", chunk_size);
-
-//    protobuf_chunk.SerializeToOstream(&protobuf_trace_file);
+    /*auto chunk_size = protobuf_chunk.ByteSize();
+    protobuf_trace_file.write(reinterpret_cast<const char*>(&chunk_size), sizeof(decltype(chunk_size)));
+    protobuf_chunk.SerializeToOstream(&protobuf_trace_file);*/
 
     trace.clear();
     protobuf_chunk.Clear();
 
-//    auto trace_segment = std::string();
-//    protobuf_chunk.SerializeAsString(&trace_segment);
+    /*auto trace_segment = std::string();
+    protobuf_chunk.SerializePartialToString(&trace_segment);
 
-//    trace.clear();
-//    protobuf_chunk.Clear();
+    trace.clear();
+    protobuf_chunk.Clear();
 
-//    uint32_t segment_length = trace_segment.length();
-//    tfm::printfln("segment size %d", segment_length);
-//    protobuf_trace_file.write(reinterpret_cast<const char*>(&segment_length), sizeof(uint32_t));
-//    protobuf_trace_file.write(trace_segment.data(), segment_length);
+    uint32_t segment_length = trace_segment.length();
+    protobuf_trace_file.write(reinterpret_cast<const char*>(&segment_length), sizeof(uint32_t));
+    protobuf_trace_file.write(trace_segment.data(), segment_length);*/
   }
 
   return;
@@ -666,14 +670,14 @@ auto cap_flush_trace () -> void
 auto cap_parser_finalize () -> void
 {
   try {
-    tfm::printfln("trace length: %d instructions", trace_length);
+    tfm::format(std::cerr, "trace length: %d instructions\n", trace_length);
     protobuf_trace_file.close();
 
     // free internal objects of protobuf
     google::protobuf::ShutdownProtobufLibrary();
   }
   catch (const std::exception& expt) {
-    tfm::printfln("exception %s", expt.what());
+    tfm::printfln("%s", expt.what());
     PIN_ExitProcess(1);
   }
 }

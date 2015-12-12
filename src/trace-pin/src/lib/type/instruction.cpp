@@ -5,7 +5,7 @@ instruction::instruction(const INS& ins)
   this->address     = INS_Address(ins);
   this->next_address = INS_NextAddress(ins);
 //  this->opcode      = INS_Mnemonic(ins);
-  this->opcode_size = INS_Size(ins);
+  this->opcode_size = static_cast<uint8_t>(INS_Size(ins));
   this->disassemble = INS_Disassemble(ins);
 
   // including image, routine
@@ -62,6 +62,5 @@ instruction::instruction(const INS& ins)
   this->is_memory_read    = INS_IsMemoryRead(ins);
   this->is_memory_write   = INS_IsMemoryWrite(ins);
   this->has_memory_read_2 = INS_HasMemoryRead2(ins);
-
-//  tfm::printfln("instruction initialized %s : %s", StringFromAddrint(this->address), this->disassemble);
+//  tfm::printfln("instruction initialized 0x%x : %s", this->address, this->disassemble);
 }

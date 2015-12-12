@@ -1,7 +1,13 @@
-project(PinICap)
+project(VTrace)
 cmake_minimum_required(VERSION 2.8)
 
-set(CMAKE_BUILD_TYPE "None")
+set(CMAKE_BUILD_TYPE "Release")
+
+find_path(PIN_ROOT_DIR
+  NAMES source/include/pin/pin.H
+  PATHS $ENV{PIN_ROOT_DIR}
+  DOC "Pin's base directory"
+)
 
 if(NOT PIN_ROOT_DIR)
   message(FATAL_ERROR
@@ -12,34 +18,59 @@ if(NOT PIN_ROOT_DIR)
 endif(NOT PIN_ROOT_DIR)
 message(STATUS "PIN_ROOT_DIR: ${PIN_ROOT_DIR}")
 
-set(PIN_CPU_ARCH "ia32")
-set(PIN_CPU_ARCH_LONG "ia32")
+if(DEFINED ARCH)
+  if (ARCH STREQUAL "intel64")
+    set(PIN_CPU_ARCH "intel64")
+    set(PIN_CPU_ARCH_LONG "intel64")
+  else()
+    set(PIN_CPU_ARCH "ia32")
+    set(PIN_CPU_ARCH_LONG "ia32")
+  endif()
+else()
+  set(PIN_CPU_ARCH "ia32")
+  set(PIN_CPU_ARCH_LONG "ia32")
+endif()
+
+if (PIN_CPU_ARCH STREQUAL "intel64")
+  message(STATUS "64 bit build")
+else()
+  message(STATUS "32 bit build")
+endif()
+
 
 set(PIN_INCLUDE_DIRS
-  ${PIN_ROOT_DIR}/extras/xed2-${PIN_CPU_ARCH_LONG}/include
+  ${PIN_ROOT_DIR}/extras/xed-${PIN_CPU_ARCH_LONG}/include
   ${PIN_ROOT_DIR}/source/include/pin
   ${PIN_ROOT_DIR}/source/include/pin/gen
   ${PIN_ROOT_DIR}/extras/components/include
   ${LOCAL_INCLUDE_DIR})
 
 set(PIN_LIBRARY_DIRS
-  ${PIN_ROOT_DIR}/extras/xed2-${PIN_CPU_ARCH_LONG}/lib
+  ${PIN_ROOT_DIR}/extras/xed-${PIN_CPU_ARCH_LONG}/lib
   ${PIN_ROOT_DIR}/${PIN_CPU_ARCH_LONG}/lib
   ${PIN_ROOT_DIR}/${PIN_CPU_ARCH_LONG}/lib-ext)
 
-set(SOURCES
+#set(SOURCES
+#  src/main.cpp
+#  src/lib/cap/tracer.cpp
+#  src/lib/cap/parser.cpp
+#  src/lib/type/instruction.cpp
+#  src/lib/type/trace.pb.cc)
+
+# Pintool sources
+set(PINTOOL_SRCS
   src/main.cpp
   src/lib/cap/tracer.cpp
   src/lib/cap/parser.cpp
   src/lib/type/instruction.cpp
   src/lib/type/trace.pb.cc)
 
-set(FAST_DEFS "")
-if(DEFINED FAST)
-set(FAST_DEFS "/D FAST_TRACING")
-message(STATUS "Fast tracing is enabled")
+if((DEFINED FAST) AND (FAST STREQUAL "Yes"))
+  set(FAST_DEFS "/D FAST_TRACING")
+  message(STATUS "Fast tracing is enabled")
 else()
-message(STATUS "Fast tracing is disabled")
+  set(FAST_DEFS "")
+  message(STATUS "Fast tracing is disabled")
 endif()
 
 # ========================================= start host configuration
@@ -97,44 +128,75 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   set(CMAKE_CXX_FLAGS "${FUNC_DEFS} ${OTHER_DEFS} ${PIN_DEFS}")
   set(CMAKE_SHARED_LINKER_FLAGS "/DLL /EXPORT:main /NODEFAULTLIB /MACHINE:x86 /ENTRY:Ptrace_DllMainCRTStartup@12 /BASE:0x55000000")
 
-  add_library(vtrace SHARED ${SOURCES})
+  add_library(vtrace SHARED ${PINTOOL_SRCS})
 #  add_library(vtrace ${SOURCES})
   target_link_libraries(vtrace ${PIN_LIBS} ${OTHER_LIBS} ${PROTOBUF_LIBS})
-  
+
 else()
 
   set(PIN_DEFINITIONS "")
-  list(APPEND PIN_DEFINITIONS
-    TARGET_LINUX
-    BIGARRAY_MULTIPLIER=1
-    USING_XED
-    TARGET_IA32 HOST_IA32)
+  if (PIN_CPU_ARCH STREQUAL "intel64")
+    message(STATUS "Set 64 bit definitions")
+    list(APPEND PIN_DEFINITIONS
+      TARGET_LINUX
+      BIGARRAY_MULTIPLIER=1
+      USING_XED
+      TARGET_IA32E HOST_IA32E)
+  else()
+    message(STATUS "Set 32 bit definitions")
+    list(APPEND PIN_DEFINITIONS
+      TARGET_LINUX
+      BIGARRAY_MULTIPLIER=1
+      USING_XED
+      TARGET_IA32 HOST_IA32)
+  endif()
+
+  add_custom_command(
+    OUTPUT  trace.pb.cc
+    COMMAND protoc --cpp_out ../src/lib/type/ -I ../../../proto/ ../../../proto/trace.proto
+    COMMENT "Launch protoc")
+
+  add_custom_target(run ALL
+    DEPENDS trace.pb.cc)
 
   set(PIN_VERSION_SCRIPT ${PIN_ROOT_DIR}/source/include/pin/pintool.ver)
 
-  set(PIN_COMPILE_FLAGS "-Wall -Wno-unknown-pragmas -std=c++11 -m32 -MMD -O3 -fomit-frame-pointer -fno-strict-aliasing -fno-stack-protector")
+  if (PIN_CPU_ARCH STREQUAL "intel64")
+    set(PIN_COMPILE_FLAGS "-Wall -Wno-unknown-pragmas -std=c++11 -MMD -O3 -fomit-frame-pointer -fno-strict-aliasing -fno-stack-protector")
+  else()
+    set(PIN_COMPILE_FLAGS "-Wall -Wno-unknown-pragmas -std=c++11 -m32 -MMD -O3 -fomit-frame-pointer -fno-strict-aliasing -fno-stack-protector")
+  endif()
 
   set(PIN_LINKER_FLAGS "-Wl,--hash-style=sysv -Wl,-Bsymbolic -Wl,--version-script=${PIN_VERSION_SCRIPT}")
 
-  set(PIN_LINK_LIBS pin xed dwarf elf dl protobuf)
+  set(PIN_LINK_LIBS pin pinvm pinapp sapin xed pindwarf dwarf elf dl protobuf)
 
   link_directories(${PIN_LIBRARY_DIRS})
   include_directories(${PIN_INCLUDE_DIRS})
 
   # add Pintool
-  add_library(vtrace SHARED ${SOURCES})
+  add_library(vtrace SHARED ${PINTOOL_SRCS})
 
   # set compile and link flags
-  set_source_files_properties(${SOURCES} PROPERTIES
+  set_source_files_properties(${PINTOOL_SRCS} PROPERTIES
     COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
     COMPILE_DEFINITIONS "${PIN_DEFINITIONS}")
 
-  set_target_properties(vtrace PROPERTIES
-    PREFIX ""
-    SUFFIX ".pin"
-    COMPILE_DEFINITIONS "${PIN_DEFINITIONS}"
-    COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
-    LINK_FLAGS "${PIN_LINKER_FLAGS} -v -m32")
+  if (PIN_CPU_ARCH STREQUAL "intel64")
+    set_target_properties(vtrace PROPERTIES
+      PREFIX ""
+      SUFFIX ".pin_m64"
+      COMPILE_DEFINITIONS "${PIN_DEFINITIONS}"
+      COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
+      LINK_FLAGS "${PIN_LINKER_FLAGS} -v")
+  else()
+    set_target_properties(vtrace PROPERTIES
+      PREFIX ""
+      SUFFIX ".pin_m32"
+      COMPILE_DEFINITIONS "${PIN_DEFINITIONS}"
+      COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
+      LINK_FLAGS "${PIN_LINKER_FLAGS} -v -m32")
+  endif()
 
   target_link_libraries(vtrace ${PIN_LINK_LIBS})
 endif()

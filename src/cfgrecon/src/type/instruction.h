@@ -31,19 +31,37 @@ class instruction
   bool is_branch;
   bool is_syscall;
   bool is_ret;
+  bool is_uncond_branch;
 //  bool is_special;
 
   xed_category_enum_t category;
   xed_iclass_enum_t iclass;
 
-  std::vector<xed_reg_enum_t> src_registers;
-  std::vector<xed_reg_enum_t> dst_registers;
+//  std::vector<xed_reg_enum_t> src_registers;
+//  std::vector<xed_reg_enum_t> dst_registers;
+//  std::map<xed_reg_enum_t, uint32_t> read_registers;
+//  std::map<xed_reg_enum_t, uint32_t> written_registers;
+  std::map<std::string, uint32_t> read_register;
+  std::map<std::string, uint32_t> written_register;
+
+  std::map<uint32_t, uint32_t> load_memory;
+  std::map<uint32_t, uint32_t> store_memmory;
+
+  uint32_t load_memory_size;
+  uint32_t store_memory_size;
+
+  std::vector<uint32_t> static_load_addresses;
+  std::vector<uint32_t> static_store_addresses;
 
   bool is_memory_read;
   bool is_memory_write;
 
+  bool is_immediate_read;
+  uint32_t immediate_read_value;
+
  public:
   instruction(uint32_t ins_addr, const char* opcode_buffer, int opcode_buffer_size);
+  instruction(const instruction& other_inst);
 };
 
 //typedef std::shared_ptr<instruction> p_instruction_t;

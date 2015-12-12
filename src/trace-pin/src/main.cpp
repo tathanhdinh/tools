@@ -8,6 +8,7 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <algorithm>
+#include <regex>
 
 #define PIN_INIT_FAILED 1
 #define UNUSED_DATA 0
@@ -21,47 +22,35 @@
 
 //KNOB<bool> follow_call           (KNOB_MODE_WRITEONCE, "pintool", "fc", "true", "following calls");
 
-KNOB<ADDRINT> start_address_knob                           (KNOB_MODE_WRITEONCE, "pintool", "start",
-                                                            "0x0", "tracing start address");
+static KNOB<ADDRINT> start_address_knob                           (KNOB_MODE_WRITEONCE, "pintool", "start",
+                                                                   "0x0", "tracing start address");
 
-KNOB<ADDRINT> stop_address_knob                            (KNOB_MODE_WRITEONCE, "pintool", "stop",
-                                                            "0x0", "tracing stop address");
+static KNOB<ADDRINT> stop_address_knob                            (KNOB_MODE_WRITEONCE, "pintool", "stop",
+                                                                   "0x0", "tracing stop address");
 
-KNOB<ADDRINT> skip_full_address_knob                       (KNOB_MODE_APPEND, "pintool", "skip-full",
-                                                            "0x0", "skipping call address");
+static KNOB<ADDRINT> skip_full_address_knob                       (KNOB_MODE_APPEND, "pintool", "skip-full",
+                                                                   "0x0", "skipping call address");
 
-KNOB<ADDRINT> skip_selective_address_knob                  (KNOB_MODE_APPEND, "pintool", "skip-selective",
-                                                            "0x0", "skipping call address but select syscalls");
+static KNOB<ADDRINT> skip_selective_address_knob                  (KNOB_MODE_APPEND, "pintool", "skip-selective",
+                                                                   "0x0", "skipping call address but select syscalls");
 
-KNOB<ADDRINT> skip_auto_address_knob                       (KNOB_MODE_APPEND, "pintool", "skip-auto",
-                                                            "0x0", "skipping called address");
+static KNOB<ADDRINT> skip_auto_address_knob                       (KNOB_MODE_APPEND, "pintool", "skip-auto",
+                                                                   "0x0", "skipping called address");
 
-KNOB<UINT32> loop_count_knob                               (KNOB_MODE_WRITEONCE, "pintool", "loop-count", "1", "loop count");
+static KNOB<UINT32> loop_count_knob                               (KNOB_MODE_WRITEONCE, "pintool", "loop-count", "1", "loop count");
 
-KNOB<string> input_file                                    (KNOB_MODE_WRITEONCE, "pintool", "conf",
-                                                            "binsec.conf", "configuration file, for parameterized analysis");
+static KNOB<string> config_file                                    (KNOB_MODE_WRITEONCE, "pintool", "conf",
+                                                                   "binsec.conf", "configuration file, for parameterized analysis");
 
-KNOB<string> output_file                                   (KNOB_MODE_WRITEONCE, "pintool", "out",
-                                                            "trace.msg", "output file, for resulted trace");
+static KNOB<string> output_file                                   (KNOB_MODE_WRITEONCE, "pintool", "out",
+                                                                   "trace.msg", "output file, for resulted trace");
 
-KNOB<bool> output_trace_format                             (KNOB_MODE_WRITEONCE, "pintool", "format",
-                                                            "true", "output trace format, 1: protobuf, 0: simple");
+//KNOB<bool> output_trace_format                             (KNOB_MODE_WRITEONCE, "pintool", "format",
+//                                                            "true", "output trace format, 1: protobuf, 0: simple");
 
 const static auto option_default_filename = std::string    ("9bcbb99f-0eb6-4d28-a876-dea762f5021d");
-KNOB<string> option_file                                   (KNOB_MODE_WRITEONCE, "pintool", "opt",
-                                                            "9bcbb99f-0eb6-4d28-a876-dea762f5021d", "option file, for parameter");
-
-//const static auto trace_dot_default_filename = std::string ("c33553b1-57ab-4922-99dc-515eb50e5f51");
-//KNOB<string> trace_dot_file                                (KNOB_MODE_WRITEONCE, "pintool", "dot",
-//                                                            "c33553b1-57ab-4922-99dc-515eb50e5f51", "output dot file, for trace");
-
-//const static auto cfg_dot_default_filename = std::string   ("793ded05-53e4-49d2-9d77-faa7f48a4217");
-//KNOB<string> cfg_dot_file                                  (KNOB_MODE_WRITEONCE, "pintool", "dot-bb",
-//                                                            "793ded05-53e4-49d2-9d77-faa7f48a4217", "output file, for basic block graph");
-
-//const static auto trace_bb_default_filename = std::string  ("0acc4fd8-acca-418c-9384-d0dd60ac85c9");
-//KNOB<string> trace_bb_file                                 (KNOB_MODE_WRITEONCE, "pintool", "trace-bb",
-//                                                            "0acc4fd8-acca-418c-9384-d0dd60ac85c9", "output file, for basic block trace");
+static KNOB<string> option_file                                   (KNOB_MODE_WRITEONCE, "pintool", "opt",
+                                                                   "9bcbb99f-0eb6-4d28-a876-dea762f5021d", "option file, for parameter");
 
 /*====================================================================================================================*/
 /*                                                     support functions                                              */
@@ -72,11 +61,11 @@ auto get_reg_from_name (const std::string& reg_name) -> REG
   auto upper_reg_name = boost::to_upper_copy(reg_name);
   std::underlying_type<REG>::type reg_id;
   for (reg_id = REG_INVALID_ ; reg_id < REG_LAST; ++reg_id) {
-    if (boost::to_upper_copy(REG_StringShort((REG)reg_id)) == upper_reg_name) {
+    if (boost::to_upper_copy(REG_StringShort(static_cast<REG>(reg_id))) == upper_reg_name) {
       break;
     }
   }
-  return (REG)reg_id;
+  return static_cast<REG>(reg_id);
 }
 
 
@@ -97,31 +86,37 @@ auto load_option_from_file (const std::string& filename) -> void
         if (field.size() == 2) {
           if (field[0] == "start") {
             auto opt_start = std::stoul(field[1], &unconverted_idx, 16);
-            cap_set_start_address(opt_start);
-            tfm::printfln("add start address: %s", StringFromAddrint(opt_start));
+            cap_set_start_address(static_cast<ADDRINT>(opt_start));
+
+            tfm::format(std::cerr, "add start address: 0x%x\n", opt_start);
           }
 
           if (field[0] == "stop") {
             auto opt_stop = std::stoul(field[1], &unconverted_idx, 16);
-            cap_set_stop_address(opt_stop);
-            tfm::printfln("add stop address: %s", StringFromAddrint(opt_stop));
+            cap_set_stop_address(static_cast<ADDRINT>(opt_stop));
+
+            tfm::format(std::cerr, "add stop address: 0x%x\n", opt_stop);
           }
 
           if (field[0] == "skip-full") {
             auto opt_skip_full = std::stoul(field[1], &unconverted_idx, 16);
-            cap_add_full_skip_call_address(opt_skip_full);
-            tfm::printfln("add skip full address: %s", StringFromAddrint(opt_skip_full));
+            cap_add_full_skip_call_address(static_cast<ADDRINT>(opt_skip_full));
+
+            tfm::format(std::cerr, "add skip full address: 0x%x\n", opt_skip_full);
           }
 
           if (field[0] == "skip-selective") {
             auto opt_skip_select = std::stoul(field[1], &unconverted_idx, 16);
-            cap_add_selective_skip_address(opt_skip_select);
+            cap_add_selective_skip_address(static_cast<ADDRINT>(opt_skip_select));
+
+            tfm::format(std::cerr, "add skip selective address: 0x%x\n", opt_skip_select);
           }
 
           if (field[0] == "skip-auto") {
             auto opt_skip_auto = std::stoul(field[1], &unconverted_idx, 16);
-            cap_add_auto_skip_call_addresses(opt_skip_auto);
-            tfm::printfln("add skip auto address: %s", StringFromAddrint(opt_skip_auto));
+            cap_add_auto_skip_call_addresses(static_cast<ADDRINT>(opt_skip_auto));
+
+            tfm::format(std::cerr, "add skip auto address: 0x%x\n", opt_skip_auto);
           }
         }
       }
@@ -142,51 +137,67 @@ auto load_configuration_from_file (const std::string& filename) -> void
 
     if (line.front() != '#') {
 
-      auto field = std::vector<std::string>();
-      boost::split(field, line, boost::is_any_of(","), boost::token_compress_on);
-
-      //    tfm::printf("address: %s order: %s info: %s value: %s before/after: %s\n", field[0], field[1], field[2], field[3]);
-      //    PIN_ExitProcess(0);
+      auto fields = std::vector<std::string>();
+      boost::split(fields, line, boost::is_any_of(","), boost::token_compress_on);
+      ASSERTX(fields.size() >= 5);
 
       auto unconverted_idx = std::size_t{0};
 
-      if (std::count(field[2].begin(), field[2].end(), ':') == 1) {
+      /*
+       * each entry in the configuration file has one of the following form:
+       *  (1) ins_addr, exec_order, mem_addr:mem_size, mem_value, patch_point, optional_fields
+       *  (2) ins_addr, exec_order, [reg_name]:mem_size, mem_value, patch_point, optional_fields
+       *  (3) ins_addr, exec_order, reg_name:low_bit_pos:high_bit_pos, reg_value, patch_point, optional_fields
+       */
 
-        auto addr_val_strs = std::vector<std::string>();
-        boost::split(addr_val_strs, field[2], boost::is_any_of(":"), boost::token_compress_on);
+      auto ins_addr = static_cast<ADDRINT>(std::stoul(fields[0], &unconverted_idx, 16));      // address of the instruction: field 0
+      auto exec_order = static_cast<UINT32>(std::stoul(fields[1]));                           // execution order: field 1
+      auto patched_value = static_cast<ADDRINT>(std::stoul(fields[3], &unconverted_idx, 16)); // patched value: field 3
+      auto patch_point = (fields[4] == "1");                                                  // patching point (false = before, true = after): field 4
 
-        cap_add_patched_memory_value(std::stoul(field[0], &unconverted_idx, 16),         // address of the instruction
-                                     std::stoul(field[1]),                               // execution order
-                                     (field[4] == "1"),                                  // patching point (false = before, true = after)
-                                     std::stoul(addr_val_strs[0], &unconverted_idx, 16), // memory address
-                                     std::stoul(addr_val_strs[1]),                       // memory size
-                                     std::stoul(field[3], &unconverted_idx, 16)          // memory value
-                                     );
+      if (std::count(fields[2].begin(), fields[2].end(), ':') == 1) { // (1) or (2)
+        auto location_and_size_strs = std::vector<std::string>{};
+        boost::split(location_and_size_strs, fields[2], boost::is_any_of(":"), boost::token_compress_on);
 
-        tfm::printf("need to patch memory address %s of size %d by value %s\n",
-                    StringFromAddrint(std::stoul(addr_val_strs[0], &unconverted_idx, 16)),
-                    std::stoul(addr_val_strs[1]),
-                    StringFromAddrint(std::stoul(field[3], &unconverted_idx, 16))
-                    );
+        auto patch_location_str = location_and_size_strs[0]; auto patch_size_str = location_and_size_strs[1];
+
+        auto mem_size = static_cast<UINT8>(std::stoul(patch_size_str, &unconverted_idx, 0xa));                       // memory size
+
+        if (std::regex_match(patch_location_str, std::regex("^\\[.+\\]$"))) { // (2)
+          auto reg_name = fields[2].substr(1, patch_location_str.size() - 2);
+          auto reg = get_reg_from_name(reg_name);
+
+          cap_add_patched_indirect_memory_value(ins_addr, exec_order, patch_point, reg, mem_size, patched_value);
+
+          tfm::format(std::cerr, "need to patch memory address pointed by %s of size %d by value 0x%x\n",
+                      reg_name, mem_size, patched_value);
+        }
+        else { // (1)
+          auto addr_val_strs = std::vector<std::string>();
+          boost::split(addr_val_strs, fields[2], boost::is_any_of(":"), boost::token_compress_on);
+          auto mem_addr = static_cast<ADDRINT>(std::stoul(addr_val_strs[0], &unconverted_idx, 16)); // memory address
+
+          cap_add_patched_memory_value(ins_addr, exec_order, patch_point, mem_addr, mem_size, patched_value);
+
+          tfm::format(std::cerr, "need to patch memory address 0x%x of size %d by value 0x%x\n",
+                      mem_addr, mem_size, patched_value);
+        }
       }
-      else {
-        assert(std::count(field[2].begin(), field[2].end(), ':') == 2);
+      else { // (3)
+        assert(std::count(fields[2].begin(), fields[2].end(), ':') == 2);
 
-        auto reg_lo_hi_pos_strs = std::vector<std::string>();
-        boost::split(reg_lo_hi_pos_strs, field[2], boost::is_any_of(":"), boost::token_compress_on);
+        auto reg_lo_hi_pos_strs = std::vector<std::string>{};
+        boost::split(reg_lo_hi_pos_strs, fields[2], boost::is_any_of(":"), boost::token_compress_on);
+        auto reg_name = reg_lo_hi_pos_strs[0];
 
-        cap_add_patched_register_value(std::stoul(field[0], &unconverted_idx, 16), // address of the instruction
-                                       std::stoul(field[1]),                       // execution order of the instruction
-                                       (field[4] == "1"),                          // patching point (false = before, true = after)
-                                       get_reg_from_name(reg_lo_hi_pos_strs[0]),   // register name
-                                       std::stoul(reg_lo_hi_pos_strs[1]),          // low bit position
-                                       std::stoul(reg_lo_hi_pos_strs[2]),          // hight bit position
-                                       std::stoul(field[3], &unconverted_idx, 16)  // register value
-                                       );
+        auto reg = get_reg_from_name(reg_name);
+          auto low_bit_pos = static_cast<UINT8>(std::stoul(reg_lo_hi_pos_strs[1]));
+          auto high_bit_pos = static_cast<UINT8>(std::stoul(reg_lo_hi_pos_strs[2]));
 
-        tfm::printf("need to patch %s [%s-%s] with value %d\n",
-                    reg_lo_hi_pos_strs[0], reg_lo_hi_pos_strs[1], reg_lo_hi_pos_strs[2],
-                    std::stoul(field[3], &unconverted_idx, 16));
+        cap_add_patched_register_value(ins_addr, exec_order, patch_point, reg, low_bit_pos, high_bit_pos, patched_value);
+
+        tfm::format(std::cerr, "need to patch %s [%d-%d] with value 0x%x\n",
+                    reg_name, low_bit_pos, high_bit_pos, patched_value);
       }
     }
   }
@@ -213,10 +224,11 @@ auto load_configuration_and_options () -> void
     cap_add_auto_skip_call_addresses(skip_auto_address_knob.Value(i));
   }
 
-  load_configuration_from_file(input_file.Value());
+  tfm::format(std::cerr, "load configuration from file %s...\n", config_file.Value());
+  load_configuration_from_file(config_file.Value());
 
   if (option_file.Value() != option_default_filename) {
-    tfm::printfln("load parameters from file %s...", option_file.Value());
+    tfm::format(std::cerr, "load options from file %s...\n", option_file.Value());
     load_option_from_file(option_file.Value());
   }
 
@@ -238,30 +250,40 @@ auto load_configuration_and_options () -> void
 
 auto stop_pin (INT32 code, VOID* data) -> VOID
 {
-  tfm::printfln("save trace...");
+  (void)code; (void)data;
+  tfm::format(std::cerr, "save trace...\n");
   cap_flush_trace();
   cap_parser_finalize();
 
-//  tfm::printfln("save trace...");
-//  cap_save_trace_to_file(output_file.Value(), output_trace_format.Value());
-
-//  if (trace_dot_file.Value() != trace_dot_default_filename) {
-//    tfm::printfln("save trace to dot file %s...", trace_dot_file.Value());
-//    cap_save_trace_to_dot_file(trace_dot_file.Value());
-//  }
-
-//  if (cfg_dot_file.Value() != cfg_dot_default_filename) {
-//    tfm::printfln("save basic block CFG to dot file %s...", cfg_dot_file.Value());
-//    cap_save_basic_block_cfg_to_dot_file(cfg_dot_file.Value());
-//  }
-
-//  if (trace_bb_file.Value() != trace_bb_default_filename) {
-//    tfm::printfln("save basic block trace to file %s...", trace_bb_file.Value());
-//    cap_save_basic_block_trace_to_file(trace_bb_file.Value());
-//  }
-
   return;
 }
+
+#if defined(_WIN32) || defined(_WIN64)
+namespace windows
+{
+#include <Windows.h>
+#include <Psapi.h>
+#include <io.h>
+#include <fcntl.h>
+
+auto reopen_console () -> void
+{
+  // attach to the console of the current cmd process
+  if (AttachConsole(ATTACH_PARENT_PROCESS))
+  {
+    auto out_desc = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_OUTPUT_HANDLE)),
+                                    _O_TEXT);
+    *stdout = *_fdopen(out_desc, "w"); setvbuf(stdout, NULL, _IONBF, 0);
+
+    auto err_desc = _open_osfhandle(reinterpret_cast<intptr_t>(GetStdHandle(STD_ERROR_HANDLE)),
+                                    _O_TEXT);
+    *stderr = *_fdopen(err_desc, "w"); setvbuf(stderr, NULL, _IONBF, 0);
+  }
+  return;
+}
+
+} // end of namespace windows
+#endif
 
 
 /*====================================================================================================================*/
@@ -271,8 +293,12 @@ auto stop_pin (INT32 code, VOID* data) -> VOID
 
 auto main(int argc, char* argv[]) -> int
 {
+#if defined(_WIN32) || defined(_WIN64)
+  windows::reopen_console();
+#endif
+
   // symbol of the binary should be initialized first
-  tfm::printfln("initialize image symbols...");
+  tfm::format(std::cerr, "initialize image symbols...\n");
   PIN_InitSymbols();
 
   if (PIN_Init(argc, argv)) {
@@ -280,9 +306,9 @@ auto main(int argc, char* argv[]) -> int
     PIN_ExitProcess(PIN_INIT_FAILED);
   }
   else {
-    tfm::printfln("initialize Pin success...");
+    tfm::format(std::cerr, "initialize Pin successfully...\n");
 
-    tfm::printfln("load configuration and options...");
+    tfm::format(std::cerr, "load configuration and options...\n");
     load_configuration_and_options();
 //    tfm::printfln("add start function...");
 //    PIN_AddApplicationStartFunction(load_configuration_and_options, UNUSED_DATA);
@@ -297,14 +323,14 @@ auto main(int argc, char* argv[]) -> int
     TRACE_AddInstrumentFunction(cap_trace_mode_patch_ins_info, UNUSED_DATA);
     TRACE_AddInstrumentFunction(cap_trace_mode_get_ins_info, UNUSED_DATA);
 
-    tfm::printfln("register syscall instruction instrumentation...");
+    tfm::format(std::cerr, "register syscall instruction instrumentation...\n");
     PIN_AddSyscallEntryFunction(cap_get_syscall_entry_info, UNUSED_DATA);
     PIN_AddSyscallExitFunction(cap_get_syscall_exit_info, UNUSED_DATA);
 
-    tfm::printfln("add fini function");
+    tfm::format(std::cerr, "add fini function\n");
     PIN_AddFiniFunction(stop_pin, UNUSED_DATA);
 
-    tfm::printfln("pass control to Pin...");
+    tfm::format(std::cerr, "pass control to Pin...\n");
     PIN_StartProgram();
   }
 
