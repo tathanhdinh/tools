@@ -62,5 +62,4 @@ instruction::instruction(const INS& ins)
   this->is_memory_read    = INS_IsMemoryRead(ins);
   this->is_memory_write   = INS_IsMemoryWrite(ins);
   this->has_memory_read_2 = INS_HasMemoryRead2(ins);
-//  tfm::printfln("instruction initialized 0x%x : %s", this->address, this->disassemble);
 }

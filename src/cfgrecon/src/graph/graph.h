@@ -18,7 +18,7 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/progress.hpp>
 
-using tr_vertex_t = uint32_t;
+using tr_vertex_t = ADDRINT;
 using tr_vertices_t = std::vector<tr_vertex_t>;
 using tr_graph_t = boost::adjacency_list<boost::listS,
                                          boost::vecS,

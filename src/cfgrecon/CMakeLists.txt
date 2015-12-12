@@ -12,8 +12,24 @@ if(NOT PIN_ROOT_DIR)
 endif(NOT PIN_ROOT_DIR)
 message(STATUS "PIN_ROOT_DIR: ${PIN_ROOT_DIR}")
 
-set(PIN_CPU_ARCH "ia32")
-set(PIN_CPU_ARCH_LONG "ia32")
+if(DEFINED ARCH)
+  if (ARCH STREQUAL "intel64")
+    set(PIN_CPU_ARCH "intel64")
+    set(PIN_CPU_ARCH_LONG "intel64")
+  else()
+    set(PIN_CPU_ARCH "ia32")
+    set(PIN_CPU_ARCH_LONG "ia32")
+  endif()
+else()
+  set(PIN_CPU_ARCH "ia32")
+  set(PIN_CPU_ARCH_LONG "ia32")
+endif()
+
+if (PIN_CPU_ARCH STREQUAL "intel64")
+  message(STATUS "64 bit build")
+else()
+  message(STATUS "32 bit build")
+endif()
 
 set(PIN_INCLUDE_DIRS
   ${PIN_ROOT_DIR}/extras/xed-${PIN_CPU_ARCH_LONG}/include
@@ -66,8 +82,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   set(XED_LIBS libxed libcpmt libcmt)
   set(PROTOBUF_LIBS libprotobuf)
 
-  #set(LINKER_DEFS "/D _MBCS /GS- /MT /EHsc /Ob2 /nologo")
-  #set(PIN_DEFS "/D TARGET_IA32 /D HOST_IA32 /D TARGET_WINDOWS /D USING_XED /D_SECURE_SCL=0 /D_ITERATOR_DEBUG_LEVEL=0 /Zc:auto")
+  set(LINKER_DEFS "/D _MBCS /GS- /MT /EHsc /Ob2 /nologo")
+  set(PIN_DEFS "/D TARGET_IA32 /D HOST_IA32 /D TARGET_WINDOWS /D USING_XED /D_SECURE_SCL=0 /D_ITERATOR_DEBUG_LEVEL=0 /Zc:auto")
   set(PROTOBUF_DEFS "/D PROTOBUF_USE_DLLS")
 
   include_directories(${BOOST_ROOT_DIR} ${PIN_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS})
@@ -89,6 +105,21 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 else ()
   add_executable(cfgrecon ${SRC_LIST})
+
+  set(PIN_DEFINITIONS "")
+  if (PIN_CPU_ARCH STREQUAL "intel64")
+    list(APPEND PIN_DEFINITIONS
+      TARGET_LINUX
+      BIGARRAY_MULTIPLIER=1
+      USING_XED
+      TARGET_IA32E HOST_IA32E)
+  else()
+     list(APPEND PIN_DEFINITIONS
+       TARGET_LINUX
+       BIGARRAY_MULTIPLIER=1
+       USING_XED
+       TARGET_IA32 HOST_IA32)
+  endif()
 
 #  set(PIN_DEFINITIONS "")
 #  list(APPEND PIN_DEFINITIONS
@@ -112,6 +143,12 @@ else ()
 #    COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
 #    COMPILE_DEFINITIONS "${PIN_DEFINITIONS}")
 
+if (PIN_CPU_ARCH STREQUAL "intel64")
+  set_target_properties(cfgrecon PROPERTIES
+    COMPILE_DEFINITIONS "${PIN_DEFINITIONS}"
+    COMPILE_FLAGS "-std=c++11"
+    LINK_FLAGS "-v")
+else()
   set_target_properties(cfgrecon PROPERTIES
     # PREFIX ""
     # SUFFIX ".pin"
@@ -119,6 +156,7 @@ else ()
 #     COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
     COMPILE_FLAGS "-std=c++11 -m32"
     LINK_FLAGS "-v -m32")
+endif()
 
   target_link_libraries(cfgrecon protobuf ${XED_LIB_DIRS}/libxed.a)
 endif ()

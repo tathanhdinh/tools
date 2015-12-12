@@ -17,6 +17,7 @@ auto cap_add_auto_skip_call_addresses       (ADDRINT address)                   
 auto cap_set_loop_count                     (uint32_t count)                                         -> void;
 auto cap_verify_parameters                  ()                                                       -> void;
 
+
 auto cap_add_patched_memory_value           (ADDRINT ins_address, UINT32 exec_order, bool be_or_af,
                                              ADDRINT mem_address, UINT8 mem_size, ADDRINT mem_value) -> void;
 auto cap_add_patched_register_value         (ADDRINT ins_address, UINT32 exec_order, bool be_or_af,

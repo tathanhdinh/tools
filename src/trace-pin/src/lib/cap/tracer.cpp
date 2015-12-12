@@ -120,10 +120,7 @@ static auto reinstrument_if_some_thread_started (ADDRINT current_addr,
                                                  ADDRINT next_addr, const CONTEXT* p_ctxt) -> void
 {
 //  assert(current_addr != start_address);
-//  assert(!some_thread_is_started);
   ASSERTX(!some_thread_is_started);
-
-//  tfm::printfln("%s : %s", normalize_hex_string(StringFromAddrint(current_addr)), cached_ins_at_addr[current_addr]->disassemble);
 
   if (cached_ins_at_addr[current_addr]->is_ret) {
 //    ASSERTX(PIN_GetContextReg(p_ctxt, REG_STACK_PTR) == next_addr);
@@ -149,11 +146,10 @@ static auto reinstrument_if_some_thread_started (ADDRINT current_addr,
 }
 
 
-static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt) -> void
+static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt, ADDRINT ins_addr) -> void
 {
   auto new_state = std::any_of(std::begin(state_of_thread), std::end(state_of_thread),
                                [](decltype(state_of_thread)::const_reference thread_state) {
-
       static_assert(std::is_same<decltype(std::get<1>(thread_state)), const tracing_state_t&>::value, "type conflict");
 
       return (std::get<1>(thread_state) != FULL_SUSPENDED) && (std::get<1>(thread_state) != SELECTIVE_SUSPENDED);
@@ -166,8 +162,6 @@ static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt) -> v
 
       return (std::get<1>(thread_state) == SELECTIVE_SUSPENDED);
   });
-
-//  tfm::printfln("current size of thread array %d", ins_at_thread.size());
 
   if (new_state != some_thread_is_not_suspended) {
     some_thread_is_not_suspended = new_state;
@@ -209,6 +203,7 @@ static auto update_condition (ADDRINT ins_addr, THREADID thread_id) -> void
             != std::end(full_skip_call_addresses)) {
 
           tfm::format(std::cerr, "suspend thread %d...\n", thread_id);
+
           state_of_thread[thread_id] = FULL_SUSPENDED;
         }
 
@@ -259,11 +254,13 @@ static auto update_condition (ADDRINT ins_addr, THREADID thread_id) -> void
 
       if (ins_addr == resume_address_of_thread[thread_id]) {
         tfm::format(std::cerr, "enable thread %d...\n", thread_id);
+
         state_of_thread[thread_id] = ENABLED;
       }
 
       if (ins_addr == start_address) {
         tfm::format(std::cerr, "enable thread %d...\n", thread_id);
+
         state_of_thread[thread_id] = ENABLED;
       }
     }
@@ -298,6 +295,8 @@ static auto update_resume_address (ADDRINT resume_addr, THREADID thread_id) -> v
 
   if (state_of_thread[thread_id] == ENABLED) {
     resume_address_of_thread[thread_id] = resume_addr;
+
+//    tfm::printfln("resume address = 0x%x", resume_addr);
   }
   return;
 }
@@ -463,6 +462,8 @@ static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
     if ((state_of_thread[thread_id] == ENABLED) ||
         ((state_of_thread[thread_id] == SELECTIVE_SUSPENDED) &&
          cached_ins_at_addr[std::get<INS_ADDRESS>(ins_at_thread[thread_id])]->is_syscall)) {
+
+//      tfm::printfln("0x%-12x %s", ins_addr, cached_ins_at_addr[ins_addr]->disassemble);
 
       std::get<INS_NEXT_ADDRESS>(ins_at_thread[thread_id]) = ins_addr;
       trace.push_back(ins_at_thread[thread_id]);
@@ -742,14 +743,14 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
   }
 
   /*
-   * Current instruction.
+   * current instruction.
    */
   auto current_ins = cached_ins_at_addr[ins_addr];
 
 
   if (some_thread_is_started) {
     /*
-     *  We must always verify whether there is a new execution thread or not.
+     *  we must always verify whether there is a new execution thread or not.
      */
     static_assert(std::is_same<
                   decltype(update_condition<NEW_THREAD>), VOID (ADDRINT, THREADID)
@@ -780,7 +781,6 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
     /*
      * Add the PREVIOUS instruction into the trace.
      */
-
     if (some_thread_is_not_suspended || some_thread_is_selective_suspended) {
       static_assert(std::is_same<
                     decltype(add_to_trace), VOID (ADDRINT, UINT32)
@@ -793,7 +793,7 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                      IARG_THREAD_ID,
                      IARG_END);
 
-    } // end of if (some_thread_is_not_suspended || some_thread_is_selective_suspended)
+    }
 
     /*
      * The following state update callback functions are CALLED ALWAYS, even when all threads are suspended. These
@@ -820,6 +820,7 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
           ) {
 //        ASSERTX((current_ins->is_call || current_ins->is_branch) &&
 //                "the instruction at the skip address must be a call or branch");
+
 
         static_assert(std::is_same<
                       decltype(update_resume_address), VOID (ADDRINT, UINT32)
@@ -853,7 +854,7 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
      */
 
     static_assert(std::is_same<
-                  decltype(reinstrument_because_of_suspended_state), VOID (const CONTEXT*)
+                  decltype(reinstrument_because_of_suspended_state), VOID (const CONTEXT*, ADDRINT)
                   >::value, "invalid callback function type");
 
     // ATTENTION: cette fonction pourra changer l'instrumentation!!!!
@@ -862,12 +863,14 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
                      IPOINT_BEFORE,
                      reinterpret_cast<AFUNPTR>(reinstrument_because_of_suspended_state),
                      IARG_CONST_CONTEXT,
+                     IARG_INST_PTR,
                      IARG_END);
     // }
 
+
     /*
      * The function ABOVE will update the suspended state (which is true if there is some non-suspended thread, and
-     * false if all threads are suspended), and restart the instrumentation only if the suspended state change.
+     * false if all threads are suspended), and restart the instrumentation only if the suspended state changes.
      *
      * Now if the following callback functions are called, then that means the instruction should be captured. The
      * following function will capture information of the current instruction.
@@ -1288,10 +1291,6 @@ auto update_syscall_entry_info<CAP_SYS_OTHER> (dyn_ins_t& instruction) -> void
 
 static auto save_syscall_entry_info (THREADID thread_id, CONTEXT* p_context, SYSCALL_STANDARD syscall_std, VOID* data) -> VOID
 {
-//  tfm::printfln("syscall instrumentation is called at IP = %s, thread_id = %d, syscall_id = %d",
-//                StringFromAddrint(PIN_GetContextReg(p_context, REG_INST_PTR)), thread_id,
-//                PIN_GetSyscallNumber(p_context, syscall_std));
-
   if (some_thread_is_started &&
       (some_thread_is_not_suspended || some_thread_is_selective_suspended)) {
 
@@ -1309,8 +1308,6 @@ static auto save_syscall_entry_info (THREADID thread_id, CONTEXT* p_context, SYS
       std::get<SYSCALL_ARG_1>(current_syscall_info) = PIN_GetSyscallArgument(p_context, syscall_std, 1);
       std::get<SYSCALL_ARG_2>(current_syscall_info) = PIN_GetSyscallArgument(p_context, syscall_std, 2);
       std::get<SYSCALL_ARG_3>(current_syscall_info) = PIN_GetSyscallArgument(p_context, syscall_std, 3);
-
-//      tfm::printfln("IP = %s, thread = %d: entry (start) syscall id %d", StringFromAddrint(ins_addr), thread_id, syscall_id);
 
       switch (std::get<SYSCALL_ID>(current_syscall_info))
       {
@@ -1447,8 +1444,6 @@ static auto save_syscall_exit_concret_info (THREADID thread_id,
         get_syscall_exit_concret_info<CAP_SYS_OTHER>(ins_at_thread[thread_id]);
         break;
       }
-
-//      tfm::printfln("exit (end) syscall idx %d", type_idx);
     }
   }
   return;
@@ -1662,6 +1657,7 @@ auto cap_verify_parameters () -> void
   tfm::format(std::cerr, "stop address 0x%x\n", stop_address);
   return;
 }
+
 
 ins_instrumentation_t cap_ins_mode_get_ins_info          = ins_mode_get_ins_info;
 ins_instrumentation_t cap_patch_instrunction_information = ins_mode_patch_ins_info;

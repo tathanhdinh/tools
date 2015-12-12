@@ -6,7 +6,7 @@
 
 extern p_instructions_t trace;
 
-using chunk_mem_access_t = std::pair< std::vector<uint32_t>, std::vector<uint32_t> >;
+using chunk_mem_access_t = std::pair< std::vector<ADDRINT>, std::vector<ADDRINT> >;
 
 using p_chunk_mem_access_t = std::shared_ptr<const chunk_mem_access_t>;
 using chunk_index_pair_t = std::pair<p_chunk_mem_access_t, uint32_t>;
@@ -21,9 +21,9 @@ bool is_equal(const p_chunk_mem_access_t chunk_a, p_chunk_mem_access_t chunk_b)
 #define MEM_LOAD true
 #define MEM_STORE false
 template<bool load_or_store>
-static auto get_memory_access_addresses (p_instructions_t trace) -> std::vector<uint32_t>
+static auto get_memory_access_addresses (p_instructions_t trace) -> std::vector<ADDRINT>
 {
-  auto access_mem_addrs = std::vector<uint32_t>{};
+  auto access_mem_addrs = std::vector<ADDRINT>{};
 
   for (const auto& ins : trace) {
     const auto& access_mem = load_or_store ? ins->load_memory : ins->store_memmory;
@@ -61,7 +61,7 @@ auto split_trace_into_chunks (const p_instructions_t& trace) -> std::vector<p_in
 }
 
 
-auto split_trace_into_chunks (const p_instructions_t& trace, uint32_t start_addr) -> std::vector<p_instructions_t>
+auto split_trace_into_chunks (const p_instructions_t& trace, ADDRINT start_addr) -> std::vector<p_instructions_t>
 {
   auto ins_chunks = std::vector<p_instructions_t>{};
 
@@ -107,11 +107,11 @@ static auto extract_memory_access_chunks (p_instructions_t trace) -> std::vector
 }
 
 
-using address_set_pair_t = std::pair< std::set<uint32_t>, std::set<uint32_t> >;
+using address_set_pair_t = std::pair< std::set<ADDRINT>, std::set<ADDRINT> >;
 static auto get_memory_io_of_chunk (const p_instructions_t& chunk) -> address_set_pair_t
 {
-  auto input_addrs = std::set<uint32_t>{};
-  auto output_addrs = std::set<uint32_t>{};
+  auto input_addrs = std::set<ADDRINT>{};
+  auto output_addrs = std::set<ADDRINT>{};
 
   for (const auto& ins : chunk) {
     for (auto load_addr_val : ins->load_memory) {
@@ -133,8 +133,8 @@ static auto get_memory_io_of_chunk (const p_instructions_t& chunk) -> address_se
 
 static auto get_static_memory_access_addresses_of_chunk (const p_instructions_t& chunk) -> address_set_pair_t
 {
-  auto load_addrs = std::set<uint32_t>{};
-  auto store_addrs = std::set<uint32_t>{};
+  auto load_addrs = std::set<ADDRINT>{};
+  auto store_addrs = std::set<ADDRINT>{};
 
   for (const auto& ins : chunk) {
     for (auto addr : ins->static_load_addresses) {
@@ -152,8 +152,8 @@ static auto get_static_memory_access_addresses_of_chunk (const p_instructions_t&
 
 static auto get_dynamic_memory_access_addresses_of_chunk (const p_instructions_t& chunk) -> address_set_pair_t
 {
-  auto load_addrs = std::set<uint32_t>{0};
-  auto store_addrs = std::set<uint32_t>{0};
+  auto load_addrs = std::set<ADDRINT>{0};
+  auto store_addrs = std::set<ADDRINT>{0};
 
   for (const auto& ins : chunk) {
     auto ins_load_mem = ins->load_memory;
@@ -177,9 +177,9 @@ static auto get_dynamic_memory_access_addresses_of_chunk (const p_instructions_t
 }
 
 
-static auto update_memory_state_of_chunk (const p_instructions_t& chunk, std::map<uint32_t, uint8_t>& mem_state) -> void
+static auto update_memory_state_of_chunk (const p_instructions_t& chunk, std::map<ADDRINT, uint8_t>& mem_state) -> void
 {
-  auto update_state = [&](uint32_t mem_addr, uint32_t mem_val, uint8_t mem_size) -> void
+  auto update_state = [&](ADDRINT mem_addr, ADDRINT mem_val, uint8_t mem_size) -> void
   {
     uint8_t val_b[4];
 
@@ -216,9 +216,9 @@ static auto update_memory_state_of_chunk (const p_instructions_t& chunk, std::ma
 }
 
 
-static auto init_memory_state (const std::set<uint32_t>& addresses) -> std::map<uint32_t, uint8_t>
+static auto init_memory_state (const std::set<ADDRINT>& addresses) -> std::map<ADDRINT, uint8_t>
 {
-  auto mem_state = std::map<uint32_t, uint8_t>{};
+  auto mem_state = std::map<ADDRINT, uint8_t>{};
   for (auto addr : addresses) {
     mem_state[addr] = 0x0;
   }
@@ -226,7 +226,7 @@ static auto init_memory_state (const std::set<uint32_t>& addresses) -> std::map<
 }
 
 
-static auto get_static_memory_state_of_chunk (const p_instructions_t& chunk) -> std::map<uint32_t, uint8_t>
+static auto get_static_memory_state_of_chunk (const p_instructions_t& chunk) -> std::map<ADDRINT, uint8_t>
 {
   auto static_addrs_io = get_static_memory_access_addresses_of_chunk(chunk);
   auto addrs = std::get<0>(static_addrs_io);
@@ -239,7 +239,7 @@ static auto get_static_memory_state_of_chunk (const p_instructions_t& chunk) -> 
 }
 
 
-static auto get_dynamic_memory_state_of_chunk (const p_instructions_t& chunk) -> std::map<uint32_t, uint8_t>
+static auto get_dynamic_memory_state_of_chunk (const p_instructions_t& chunk) -> std::map<ADDRINT, uint8_t>
 {
   auto dynamic_addrs_io = get_dynamic_memory_access_addresses_of_chunk(chunk);
   auto addrs = std::get<0>(dynamic_addrs_io);

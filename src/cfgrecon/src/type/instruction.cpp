@@ -62,13 +62,13 @@ instruction::instruction(const instruction& other_inst)
 #define MEM_STORE_SIZE         1
 #define MEM_LOAD_STATIC_ADDRS  2
 #define MEM_STORE_STATIC_ADDRS 3
-static auto get_memory_access_info (const xed_decoded_inst_t* p_inst) -> std::tuple< uint32_t, uint32_t,
-                                                                                     std::vector<uint32_t>, std::vector<uint32_t> >
+static auto get_memory_access_info (const xed_decoded_inst_t* p_inst) -> std::tuple< ADDRINT, ADDRINT,
+                                                                                     std::vector<ADDRINT>, std::vector<ADDRINT> >
 {
-  auto load_size = uint32_t{0};
-  auto store_size = uint32_t{0};
-  auto static_load_addrs = std::vector<uint32_t>{};
-  auto static_store_addrs = std::vector<uint32_t>{};
+  auto load_size = ADDRINT{0};
+  auto store_size = ADDRINT{0};
+  auto static_load_addrs = std::vector<ADDRINT>{};
+  auto static_store_addrs = std::vector<ADDRINT>{};
 
   auto mem_op_num = xed_decoded_inst_number_of_memory_operands(p_inst);
 
@@ -111,22 +111,36 @@ static auto get_memory_access_info (const xed_decoded_inst_t* p_inst) -> std::tu
   return std::make_tuple(load_size, store_size, static_load_addrs, static_store_addrs);
 }
 
-instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcode_buffer_size)
+instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode_buffer_size)
 {
+//  tfm::printfln("0x%x %d", ins_addr, opcode_buffer_size);
   this->address = ins_addr;
 
   auto xed_inst = xed_decoded_inst_t{};
-  xed_decoded_inst_set_mode(&xed_inst, XED_MACHINE_MODE_LEGACY_32, XED_ADDRESS_WIDTH_32b);
+  if (this->arch == IA32_INST_ARCH) {
+//    tfm::printfln("set 32 bit decoding mode");
+    xed_decoded_inst_set_mode(&xed_inst, XED_MACHINE_MODE_LEGACY_32, XED_ADDRESS_WIDTH_32b);
+  }
+  else {
+//    tfm::printfln("set 64 bit decoding mode");
+    xed_decoded_inst_set_mode(&xed_inst, XED_MACHINE_MODE_LONG_64, XED_ADDRESS_WIDTH_64b);
+  }
 
 //  tfm::printfln("opcode buffer size: %d", opcode_buffer_size);
   auto decode_err = xed_decode(&xed_inst, XED_STATIC_CAST(const xed_uint8_t*, opcode_buffer), opcode_buffer_size);
-
-  if (decode_err != XED_ERROR_NONE) throw std::logic_error("instruction decoding error");
+  if (decode_err != XED_ERROR_NONE) {
+    tfm::printfln("0x%x: ", ins_addr);
+    auto tmp_buff = reinterpret_cast<const uint8_t*>(opcode_buffer);
+    for (int i = 0; i < opcode_buffer_size; ++i) {
+      tfm::printf("%x ",tmp_buff[i]);
+    }
+    tfm::printfln("");
+    throw std::logic_error("instruction decoding error");
+  }
 
   std::fill_n(disasm_buffer, 1000, 0);
   xed_decoded_inst_dump_xed_format(&xed_inst, disasm_buffer, 128, ins_addr);
   auto disasm_err = xed_format_context(XED_SYNTAX_INTEL, &xed_inst, disasm_buffer, 128, ins_addr, nullptr, nullptr);
-
   if (disasm_err == 0) throw std::logic_error("instruction disassembling error");
 
   this->disassemble = std::string(disasm_buffer);
@@ -196,4 +210,6 @@ instruction::instruction(uint32_t ins_addr, const char* opcode_buffer, int opcod
       break;
     }
   }
+
+//  tfm::printfln("haha\n");
 }

@@ -221,6 +221,8 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
   auto ins_address = std::get<INS_ADDRESS>(ins);
   auto p_static_ins = cached_ins_at_addr[ins_address];
 
+//  tfm::printfln("0x%x  %s", ins_address, p_static_ins->disassemble);
+
   // add a new body as an instruction
   auto p_ins_body = chunk.add_body();
   p_ins_body->set_typeid_(trace_format::INSTRUCTION);
@@ -229,7 +231,11 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
   // create an instruction for this body, and set some information
   auto p_instruction = p_ins_body->mutable_instruction();
   p_instruction->set_thread_id(std::get<INS_THREAD_ID>(ins));
-  p_instruction->set_opcode(reinterpret_cast<uint8_t*>(ins_address), p_static_ins->opcode_size);
+
+  auto opc_size = p_static_ins->opcode_size;
+  auto opc_buffer = std::shared_ptr<uint8_t>(new uint8_t[opc_size], std::default_delete<uint8_t[]>());
+  PIN_SafeCopy(opc_buffer.get(), reinterpret_cast<const VOID*>(ins_address), opc_size);
+  p_instruction->set_opcode(/*reinterpret_cast<uint8_t*>(ins_address)*/opc_buffer.get(), p_static_ins->opcode_size);
 
   auto p_ins_addr = p_instruction->mutable_address();
 
@@ -557,11 +563,11 @@ static auto add_trace_instruction (trace_format::chunk_t& chunk, const dyn_ins_t
 }
 
 
-auto convert_trace_to_byte_segments (trace_format::trace_t& captured_trace, uint32_t segment_size) -> std::string
-{
-  auto trace_string = std::string("");
-  return trace_string;
-}
+//auto convert_trace_to_byte_segments (trace_format::trace_t& captured_trace, uint32_t segment_size) -> std::string
+//{
+//  auto trace_string = std::string("");
+//  return trace_string;
+//}
 
 
 auto flush_trace_in_protobuf_format () -> void
