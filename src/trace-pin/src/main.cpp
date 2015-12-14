@@ -18,7 +18,8 @@
 /*====================================================================================================================*/
 
 
-//KNOB<uint32_t> trace_length_knob (KNOB_MODE_WRITEONCE, "pintool", "le", "1000", "length of trace");
+static KNOB<uint32_t> trace_length_knob                           (KNOB_MODE_WRITEONCE, "pintool", "length",
+                                                                   "3000000", "length of trace");
 
 //KNOB<bool> follow_call           (KNOB_MODE_WRITEONCE, "pintool", "fc", "true", "following calls");
 
@@ -232,6 +233,7 @@ auto load_configuration_and_options () -> void
     load_option_from_file(option_file.Value());
   }
 
+  cap_set_trace_length(trace_length_knob.Value());
   cap_set_loop_count(loop_count_knob.Value());
 
   cap_initialize_state();
@@ -251,6 +253,7 @@ auto load_configuration_and_options () -> void
 auto stop_pin (INT32 code, VOID* data) -> VOID
 {
   (void)code; (void)data;
+
   tfm::format(std::cerr, "save trace...\n");
   cap_flush_trace();
   cap_parser_finalize();

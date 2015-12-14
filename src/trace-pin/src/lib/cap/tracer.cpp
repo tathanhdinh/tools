@@ -80,6 +80,7 @@ static auto selective_skip_call_addresses      = std::vector<ADDRINT>();
 static auto auto_skip_call_addresses           = std::vector<ADDRINT>();
 static auto max_trace_length                   = uint32_t{0};
 static auto loop_count                         = uint32_t{0};
+static auto trace_length                       = uint32_t{0};
 
 static auto patched_register_at_address        = std::vector<patch_point_register_t>();
 static auto patched_memory_at_address          = std::vector<patch_point_memory_t>();
@@ -468,7 +469,14 @@ static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
       std::get<INS_NEXT_ADDRESS>(ins_at_thread[thread_id]) = ins_addr;
       trace.push_back(ins_at_thread[thread_id]);
 
-      if (trace.size() >= 5000) cap_flush_trace();
+      if (trace.size() >= 5000) {
+        trace_length += trace.size();
+        if (trace_length >= max_trace_length) {
+          tfm::format(std::cerr, "stop tracing since trace limit length %d is exceed\n", max_trace_length);
+          PIN_ExitApplication(1);
+        }
+        cap_flush_trace();
+      }
     }
   }
 

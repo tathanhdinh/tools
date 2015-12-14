@@ -134,7 +134,7 @@ instruction::instruction(ADDRINT ins_addr, const char* opcode_buffer, int opcode
     for (int i = 0; i < opcode_buffer_size; ++i) {
       tfm::printf("%x ",tmp_buff[i]);
     }
-    tfm::printfln("");
+    tfm::printfln("instruction decoding error");
     //throw std::logic_error("instruction decoding error");
   }
   else {
