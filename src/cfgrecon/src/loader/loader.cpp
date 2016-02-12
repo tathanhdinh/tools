@@ -167,7 +167,7 @@ static auto parse_chunk_from_buffer (const char* buffer, int buffer_size) -> voi
 
   if (!inst_chunk.ParseFromArray(buffer, buffer_size)) throw std::domain_error("parsing chunk error");
 
-//  tfm::printfln("number of instructions in chunk: %d", inst_chunk.body_size());
+  tfm::printfln("number of instructions in chunk: %d", inst_chunk.body_size());
   auto body_num = inst_chunk.body_size();
   for (auto i = 0; i < body_num; ++i) {
     const auto& body = inst_chunk.body(i);

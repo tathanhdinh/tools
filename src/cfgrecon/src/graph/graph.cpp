@@ -200,7 +200,8 @@ static auto numbering_from_vertex (bb_vertex_desc_t current_vertex, bb_graph_t& 
 
   // deciding order of traversing
   std::stable_sort(
-        std::begin(next_unnumbered_vertices), std::end(next_unnumbered_vertices), [&graph](bb_vertex_desc_t va, bb_vertex_desc_t vb)
+        std::begin(next_unnumbered_vertices), std::end(next_unnumbered_vertices),
+        [&graph](bb_vertex_desc_t va, bb_vertex_desc_t vb)
   {
     return (std::get<BB_ADDRESSES>(graph[va]).front() < std::get<BB_ADDRESSES>(graph[vb]).front());
   });
