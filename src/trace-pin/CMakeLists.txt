@@ -151,13 +151,13 @@ else()
       TARGET_IA32 HOST_IA32)
   endif()
 
-  add_custom_command(
-    OUTPUT  trace.pb.cc
-    COMMAND protoc --cpp_out ../src/lib/type/ -I ../../../proto/ ../../../proto/trace.proto
-    COMMENT "Launch protoc")
+#  add_custom_command(
+#    OUTPUT  trace.pb.cc
+#    COMMAND protoc --cpp_out ../src/lib/type/ -I ../proto/ ../proto/trace.proto
+#    COMMENT "Launch protoc")
 
-  add_custom_target(run ALL
-    DEPENDS trace.pb.cc)
+#  add_custom_target(run ALL
+#    DEPENDS trace.pb.cc)
 
   set(PIN_VERSION_SCRIPT ${PIN_ROOT_DIR}/source/include/pin/pintool.ver)
 

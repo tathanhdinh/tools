@@ -152,8 +152,8 @@ else()
   set_target_properties(cfgrecon PROPERTIES
     # PREFIX ""
     # SUFFIX ".pin"
-#     COMPILE_DEFINITIONS "${PIN_DEFINITIONS}"
-#     COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
+    COMPILE_DEFINITIONS "${PIN_DEFINITIONS}"
+    COMPILE_FLAGS "${PIN_COMPILE_FLAGS}"
     COMPILE_FLAGS "-std=c++11 -m32"
     LINK_FLAGS "-v -m32")
 endif()

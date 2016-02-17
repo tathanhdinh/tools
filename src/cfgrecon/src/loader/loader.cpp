@@ -367,10 +367,10 @@ auto save_trace_to_file (const std::string& filename) -> void
     for (const auto& inst : trace) {
       tfm::format(trace_file, "0x%x  %-40s", inst->address, inst->disassemble);
 
-      save_register_info<REG_READ>(inst, trace_file);
-      save_register_info<REG_WRITE>(inst, trace_file);
-      save_memory_info<MEM_LOAD>(inst, trace_file);
-      save_memory_info<MEM_STORE>(inst, trace_file);
+//      save_register_info<REG_READ>(inst, trace_file);
+//      save_register_info<REG_WRITE>(inst, trace_file);
+//      save_memory_info<MEM_LOAD>(inst, trace_file);
+//      save_memory_info<MEM_STORE>(inst, trace_file);
 
       tfm::format(trace_file, "\n");
     }
