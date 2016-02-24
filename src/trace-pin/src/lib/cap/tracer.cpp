@@ -109,13 +109,13 @@ enum event_t
 };
 
 
-auto normalize_hex_string (const std::string& input) -> std::string
-{
-  assert(input.find("0x") == 0);
-  auto first_non_zero_iter = std::find_if(std::begin(input) + 2, std::end(input), [](char c) { return (c != '0');});
-  auto output = first_non_zero_iter != std::end(input) ? std::string(first_non_zero_iter, std::end(input)) : std::string("0");
-  return ("0x" + output);
-}
+//auto normalize_hex_string (const std::string& input) -> std::string
+//{
+//  assert(input.find("0x") == 0);
+//  auto first_non_zero_iter = std::find_if(std::begin(input) + 2, std::end(input), [](char c) { return (c != '0');});
+//  auto output = first_non_zero_iter != std::end(input) ? std::string(first_non_zero_iter, std::end(input)) : std::string("0");
+//  return ("0x" + output);
+//}
 
 static auto reinstrument_if_some_thread_started (ADDRINT current_addr,
                                                  ADDRINT next_addr, const CONTEXT* p_ctxt) -> void
@@ -469,6 +469,8 @@ static auto add_to_trace (ADDRINT ins_addr, THREADID thread_id) -> void
       std::get<INS_NEXT_ADDRESS>(ins_at_thread[thread_id]) = ins_addr;
       trace.push_back(ins_at_thread[thread_id]);
 
+//      tfm::printfln("trace length: %d", trace.size());
+
       if (trace.size() >= 5000) {
         trace_length += trace.size();
         if (trace_length >= max_trace_length) {
@@ -748,6 +750,7 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
    */
   if (cached_ins_at_addr.find(ins_addr) == cached_ins_at_addr.end()) {
     cached_ins_at_addr[ins_addr] = std::make_shared<instruction>(ins);
+//    tfm::printfln("0x%10x  %s", ins_addr, cached_ins_at_addr[ins_addr]->disassemble);
   }
 
   /*
@@ -1147,9 +1150,9 @@ static auto insert_ins_patch_info_callbacks (INS ins) -> void
             auto patch_value_info = std::get<1>(patch_indirect_mem_info);
             auto patch_indirect_reg = std::get<0>(patch_value_info);
 
-            static_assert(std::is_same<
-                          decltype(patch_indirect_memory), VOID (ADDRINT, bool, UINT32, ADDRINT, ADDRINT)
-                          >::value, "invalid callback function type");
+//            static_assert(std::is_same<
+//                          decltype(patch_indirect_memory), VOID (ADDRINT, bool, UINT32, ADDRINT, ADDRINT)
+//                          >::value, "invalid callback function type");
 
             INS_InsertCall(ins,
                            pin_patch_point,
@@ -1509,41 +1512,87 @@ static auto trace_mode_patch_ins_info (TRACE trace, VOID* data) -> VOID
 static auto img_mode_get_ins_info (IMG img, VOID* data) -> VOID
 {
   (void)data;
-//  if (!some_thread_is_started) {
-    for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec)) {
-      for (RTN rtn = SEC_RtnHead(sec); RTN_Valid(rtn); rtn = RTN_Next(rtn)) {
 
-        RTN_Open(rtn);
-        for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins)) {
-          auto ins_addr = INS_Address(ins);
+  for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec)) {
+    for (RTN rtn = SEC_RtnHead(sec); RTN_Valid(rtn); rtn = RTN_Next(rtn)) {
 
-          // update the code cache if a new instruction found.
-          if (cached_ins_at_addr.find(ins_addr) == cached_ins_at_addr.end()) {
+      RTN_Open(rtn);
+      for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins)) {
+        auto ins_addr = INS_Address(ins);
 
-            cached_ins_at_addr[ins_addr] = std::make_shared<instruction>(ins);
+        if (cached_ins_at_addr.find(ins_addr) != std::end(cached_ins_at_addr)) continue;
 
-            if (INS_IsDirectCall(ins) &&
-                (std::find(
-                   std::begin(full_skip_call_addresses), std::end(full_skip_call_addresses), ins_addr
-                   ) == std::end(full_skip_call_addresses)
-                 )) {
-              auto called_addr = INS_DirectBranchOrCallTargetAddress(ins);
+        // update the code cache if a new instruction found.
+        cached_ins_at_addr[ins_addr] = std::make_shared<instruction>(ins);
 
-              if (std::find(
-                    std::begin(auto_skip_call_addresses), std::end(auto_skip_call_addresses), called_addr
-                    ) != std::end(auto_skip_call_addresses)) {
-                tfm::format(std::cerr, "add a full-skip from an auto-skip at 0x%x  %s\n",
-                            ins_addr, cached_ins_at_addr[ins_addr]->disassemble);
-                full_skip_call_addresses.push_back(ins_addr);
-              }
-            }
+        if (!INS_IsDirectCall(ins)) continue;
+
+        auto called_addr = INS_DirectBranchOrCallTargetAddress(ins);
+
+        // if the current address is a full-skip, then add its called address as a auto-skip
+        if (std::find(std::begin(full_skip_call_addresses),
+                      std::end(full_skip_call_addresses), ins_addr) != std::end(full_skip_call_addresses)) {
+          if (std::find(std::begin(auto_skip_call_addresses),
+                        std::end(auto_skip_call_addresses), called_addr) != std::end(auto_skip_call_addresses)) {
+
+            tfm::format(std::cerr, "add an auto-skip for 0x%x from the target of a full-skip at 0x%x %s\n",
+                        called_addr, ins_addr, cached_ins_at_addr[ins_addr]->disassemble);
+            auto_skip_call_addresses.push_back(called_addr);
           }
         }
-        RTN_Close(rtn);
+
+        if (std::find(std::begin(auto_skip_call_addresses),
+                      std::end(auto_skip_call_addresses), called_addr) != std::end(auto_skip_call_addresses)) {
+
+          tfm::format(std::cerr, "add a full-skip at 0x%x  %s from an auto-skip at 0x%x\n",
+                      ins_addr, cached_ins_at_addr[ins_addr]->disassemble, called_addr);
+          full_skip_call_addresses.push_back(ins_addr);
+        }
+
+//        if (INS_IsDirectCall(ins) &&
+//            (std::find(
+//               std::begin(full_skip_call_addresses), std::end(full_skip_call_addresses), ins_addr
+//               ) == std::end(full_skip_call_addresses)
+//             )) {
+//          auto called_addr = INS_DirectBranchOrCallTargetAddress(ins);
+
+//          if (std::find(
+//                std::begin(auto_skip_call_addresses), std::end(auto_skip_call_addresses), called_addr
+//                ) != std::end(auto_skip_call_addresses)) {
+//            tfm::format(std::cerr, "add a full-skip from an auto-skip at 0x%x  %s\n",
+//                        ins_addr, cached_ins_at_addr[ins_addr]->disassemble);
+//            full_skip_call_addresses.push_back(ins_addr);
+//          }
+//        }
+
+
+//        // update the code cache if a new instruction found.
+//        if (cached_ins_at_addr.find(ins_addr) == cached_ins_at_addr.end()) {
+
+//          cached_ins_at_addr[ins_addr] = std::make_shared<instruction>(ins);
+
+//          if (INS_IsDirectCall(ins) &&
+//              (std::find(
+//                 std::begin(full_skip_call_addresses), std::end(full_skip_call_addresses), ins_addr
+//                 ) == std::end(full_skip_call_addresses)
+//               )) {
+//            auto called_addr = INS_DirectBranchOrCallTargetAddress(ins);
+
+//            if (std::find(
+//                  std::begin(auto_skip_call_addresses), std::end(auto_skip_call_addresses), called_addr
+//                  ) != std::end(auto_skip_call_addresses)) {
+//              tfm::format(std::cerr, "add a full-skip from an auto-skip at 0x%x  %s\n",
+//                          ins_addr, cached_ins_at_addr[ins_addr]->disassemble);
+//              full_skip_call_addresses.push_back(ins_addr);
+//            }
+//          }
+//        }
       }
+      RTN_Close(rtn);
     }
-//  }
-    tfm::format(std::cerr, "code cache size: %7d instructions processed\n", cached_ins_at_addr.size());
+  }
+
+  tfm::format(std::cerr, "code cache size: %7d instructions processed\n", cached_ins_at_addr.size());
 
   return;
 }

@@ -1,4 +1,4 @@
-#include "parsing_helper.h"
+//#include "parsing_helper.h"
 #include <pin.H>
 
 #include "lib/tinyformat.h"
@@ -18,40 +18,25 @@
 /*====================================================================================================================*/
 
 
-static KNOB<uint32_t> trace_length_knob                           (KNOB_MODE_WRITEONCE, "pintool", "length",
-                                                                   "3000000", "length of trace");
+static KNOB<uint32_t> trace_length_knob          (KNOB_MODE_WRITEONCE, "pintool", "length", "3000000", "length of trace");
 
-//KNOB<bool> follow_call           (KNOB_MODE_WRITEONCE, "pintool", "fc", "true", "following calls");
+static KNOB<ADDRINT> start_address_knob          (KNOB_MODE_WRITEONCE, "pintool", "start", "0x0", "tracing start address");
 
-static KNOB<ADDRINT> start_address_knob                           (KNOB_MODE_WRITEONCE, "pintool", "start",
-                                                                   "0x0", "tracing start address");
+static KNOB<ADDRINT> stop_address_knob           (KNOB_MODE_WRITEONCE, "pintool", "stop", "0x0", "tracing stop address");
 
-static KNOB<ADDRINT> stop_address_knob                            (KNOB_MODE_WRITEONCE, "pintool", "stop",
-                                                                   "0x0", "tracing stop address");
+static KNOB<ADDRINT> skip_full_address_knob      (KNOB_MODE_APPEND, "pintool", "skip-full", "0x0", "skipping call address");
 
-static KNOB<ADDRINT> skip_full_address_knob                       (KNOB_MODE_APPEND, "pintool", "skip-full",
-                                                                   "0x0", "skipping call address");
+static KNOB<ADDRINT> skip_selective_address_knob (KNOB_MODE_APPEND, "pintool", "skip-selective", "0x0", "skipping call address but select syscalls");
 
-static KNOB<ADDRINT> skip_selective_address_knob                  (KNOB_MODE_APPEND, "pintool", "skip-selective",
-                                                                   "0x0", "skipping call address but select syscalls");
+static KNOB<ADDRINT> skip_auto_address_knob      (KNOB_MODE_APPEND, "pintool", "skip-auto", "0x0", "skipping called address");
 
-static KNOB<ADDRINT> skip_auto_address_knob                       (KNOB_MODE_APPEND, "pintool", "skip-auto",
-                                                                   "0x0", "skipping called address");
+static KNOB<UINT32> loop_count_knob              (KNOB_MODE_WRITEONCE, "pintool", "loop-count", "1", "loop count");
 
-static KNOB<UINT32> loop_count_knob                               (KNOB_MODE_WRITEONCE, "pintool", "loop-count", "1", "loop count");
+static KNOB<string> config_file                  (KNOB_MODE_WRITEONCE, "pintool", "conf", "", "configuration file, for parameterized analysis");
 
-static KNOB<string> config_file                                    (KNOB_MODE_WRITEONCE, "pintool", "conf",
-                                                                   "binsec.conf", "configuration file, for parameterized analysis");
+static KNOB<string> output_file                  (KNOB_MODE_WRITEONCE, "pintool", "out", "trace.msg", "output file, for resulted trace");
 
-static KNOB<string> output_file                                   (KNOB_MODE_WRITEONCE, "pintool", "out",
-                                                                   "trace.msg", "output file, for resulted trace");
-
-//KNOB<bool> output_trace_format                             (KNOB_MODE_WRITEONCE, "pintool", "format",
-//                                                            "true", "output trace format, 1: protobuf, 0: simple");
-
-const static auto option_default_filename = std::string    ("9bcbb99f-0eb6-4d28-a876-dea762f5021d");
-static KNOB<string> option_file                                   (KNOB_MODE_WRITEONCE, "pintool", "opt",
-                                                                   "9bcbb99f-0eb6-4d28-a876-dea762f5021d", "option file, for parameter");
+static KNOB<string> option_file                  (KNOB_MODE_WRITEONCE, "pintool", "opt", "", "option file, for parameter");
 
 /*====================================================================================================================*/
 /*                                                     support functions                                              */
@@ -225,10 +210,12 @@ auto load_configuration_and_options () -> void
     cap_add_auto_skip_call_addresses(skip_auto_address_knob.Value(i));
   }
 
-  tfm::format(std::cerr, "load configuration from file %s...\n", config_file.Value());
-  load_configuration_from_file(config_file.Value());
+  if (!config_file.Value().empty()) {
+    tfm::format(std::cerr, "load configuration from file %s...\n", config_file.Value());
+    load_configuration_from_file(config_file.Value());
+  }
 
-  if (option_file.Value() != option_default_filename) {
+  if (!option_file.Value().empty()) {
     tfm::format(std::cerr, "load options from file %s...\n", option_file.Value());
     load_option_from_file(option_file.Value());
   }
@@ -323,12 +310,12 @@ auto main(int argc, char* argv[]) -> int
     IMG_AddInstrumentFunction(cap_img_mode_get_ins_info, UNUSED_DATA);
 
     tfm::printfln("register trace-based instruction instrumentation...");
-    TRACE_AddInstrumentFunction(cap_trace_mode_patch_ins_info, UNUSED_DATA);
+//    TRACE_AddInstrumentFunction(cap_trace_mode_patch_ins_info, UNUSED_DATA);
     TRACE_AddInstrumentFunction(cap_trace_mode_get_ins_info, UNUSED_DATA);
 
     tfm::format(std::cerr, "register syscall instruction instrumentation...\n");
-    PIN_AddSyscallEntryFunction(cap_get_syscall_entry_info, UNUSED_DATA);
-    PIN_AddSyscallExitFunction(cap_get_syscall_exit_info, UNUSED_DATA);
+//    PIN_AddSyscallEntryFunction(cap_get_syscall_entry_info, UNUSED_DATA);
+//    PIN_AddSyscallExitFunction(cap_get_syscall_exit_info, UNUSED_DATA);
 
     tfm::format(std::cerr, "add fini function\n");
     PIN_AddFiniFunction(stop_pin, UNUSED_DATA);

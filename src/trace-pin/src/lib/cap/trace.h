@@ -113,6 +113,6 @@ enum
     INS_NEXT_ADDRESS  = 7
   };
 
-auto normalize_hex_string (const std::string& input) -> std::string;
+//auto normalize_hex_string (const std::string& input) -> std::string;
 
 #endif // TRACE_H
