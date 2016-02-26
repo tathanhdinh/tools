@@ -169,7 +169,7 @@ else()
 
   set(PIN_LINKER_FLAGS "-Wl,--hash-style=sysv -Wl,-Bsymbolic -Wl,--version-script=${PIN_VERSION_SCRIPT}")
 
-  set(PIN_LINK_LIBS pin pinvm pinapp sapin xed pindwarf dwarf elf dl protobuf)
+  set(PIN_LINK_LIBS pin pinvm pinapp sapin xed pindwarf dwarf elf dl protobuf boost_system boost_filesystem)
 
   link_directories(${PIN_LIBRARY_DIRS})
   include_directories(${PIN_INCLUDE_DIRS})

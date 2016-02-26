@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include <algorithm>
 #include <regex>
 
@@ -38,11 +39,6 @@ static KNOB<string> output_file                  (KNOB_MODE_WRITEONCE, "pintool"
 
 static KNOB<string> option_file                  (KNOB_MODE_WRITEONCE, "pintool", "opt", "", "option file, for parameter");
 
-static auto config_file_is_loaded = false;
-static auto option_file_is_loaded = false;
-static auto trace_file_is_opened = false;
-
-
 /*====================================================================================================================*/
 /*                                                     support functions                                              */
 /*====================================================================================================================*/
@@ -63,56 +59,63 @@ auto get_reg_from_name (const std::string& reg_name) -> REG
 auto load_option_from_file (const std::string& filename) -> void
 {
   std::ifstream opt_file(filename.c_str(), std::ifstream::in);
+  if (!opt_file.is_open()) {
+    tfm::printfln("cannot open option file: %s", filename);
+    return;
+  }
 
-  if (opt_file.is_open()) {
-    auto line = std::string();
-    while (std::getline(opt_file, line)) {
-      line = boost::trim_copy(line);
+  auto line = std::string();
+  while (std::getline(opt_file, line)) {
+    line = boost::trim_copy(line);
+    if (line.front() == '#') continue; // omit commented file
 
-      if (line.front() != '#') {
-        auto field = std::vector<std::string>();
-        boost::split(field, line, boost::is_any_of(","), boost::token_compress_on);
+    auto field = std::vector<std::string>();
+    boost::split(field, line, boost::is_any_of(","), boost::token_compress_on);
 
-        auto unconverted_idx = std::size_t{0};
-        if (field.size() == 2) {
-          if (field[0] == "start") {
-            auto opt_start = std::stoul(field[1], &unconverted_idx, 16);
-            cap_set_start_address(static_cast<ADDRINT>(opt_start));
 
-            tfm::format(std::cerr, "add start address: 0x%x\n", opt_start);
-          }
+    if (field.size() < 2) {
+      tfm::printfln("malformed string");
+      continue;
+    }
 
-          if (field[0] == "stop") {
-            auto opt_stop = std::stoul(field[1], &unconverted_idx, 16);
-            cap_set_stop_address(static_cast<ADDRINT>(opt_stop));
+//    if (field.size() == 2) {
+    auto unconverted_idx = std::size_t{0};
+    if (field[0] == "start") {
+      auto opt_start = std::stoul(field[1], &unconverted_idx, 0);
+      cap_set_start_address(static_cast<ADDRINT>(opt_start));
 
-            tfm::format(std::cerr, "add stop address: 0x%x\n", opt_stop);
-          }
+      tfm::format(std::cerr, "add start address: 0x%x\n", opt_start);
+    }
 
-          if (field[0] == "skip-full") {
-            auto opt_skip_full = std::stoul(field[1], &unconverted_idx, 16);
-            cap_add_full_skip_call_address(static_cast<ADDRINT>(opt_skip_full));
+    if (field[0] == "stop") {
+      auto opt_stop = std::stoul(field[1], &unconverted_idx, 0);
+      cap_set_stop_address(static_cast<ADDRINT>(opt_stop));
 
-            tfm::format(std::cerr, "add skip full address: 0x%x\n", opt_skip_full);
-          }
+      tfm::format(std::cerr, "add stop address: 0x%x\n", opt_stop);
+    }
 
-          if (field[0] == "skip-selective") {
-            auto opt_skip_select = std::stoul(field[1], &unconverted_idx, 16);
-            cap_add_selective_skip_address(static_cast<ADDRINT>(opt_skip_select));
+    if (field[0] == "skip-full") {
+      auto opt_skip_full = std::stoul(field[1], &unconverted_idx, 16);
+      cap_add_full_skip_call_address(static_cast<ADDRINT>(opt_skip_full));
 
-            tfm::format(std::cerr, "add skip selective address: 0x%x\n", opt_skip_select);
-          }
+      tfm::format(std::cerr, "add skip full address: 0x%x\n", opt_skip_full);
+    }
 
-          if (field[0] == "skip-auto") {
-            auto opt_skip_auto = std::stoul(field[1], &unconverted_idx, 16);
-            cap_add_auto_skip_call_addresses(static_cast<ADDRINT>(opt_skip_auto));
+//          if (field[0] == "skip-selective") {
+//            auto opt_skip_select = std::stoul(field[1], &unconverted_idx, 16);
+//            cap_add_selective_skip_address(static_cast<ADDRINT>(opt_skip_select));
 
-            tfm::format(std::cerr, "add skip auto address: 0x%x\n", opt_skip_auto);
-          }
-        }
-      }
+//            tfm::format(std::cerr, "add skip selective address: 0x%x\n", opt_skip_select);
+//          }
+
+    if (field[0] == "skip-auto") {
+      auto opt_skip_auto = std::stoul(field[1], &unconverted_idx, 16);
+      cap_add_auto_skip_call_addresses(static_cast<ADDRINT>(opt_skip_auto));
+
+      tfm::format(std::cerr, "add skip auto address: 0x%x\n", opt_skip_auto);
     }
   }
+//  }
 
   return;
 }
@@ -196,10 +199,21 @@ auto load_configuration_from_file (const std::string& filename) -> void
 }
 
 
-auto load_configuration_and_options () -> void
+auto get_application_name (int argc, char* argv[]) -> std::string
 {
+  auto i = int{0};
+  for (; i < argc; ++i) if (std::string(argv[i]) == "--") break;
+  ASSERTX(i <= (argc - 2));
+  return std::string(argv[i + 1]);
+}
+
+
+auto load_configuration_and_options (int argc, char* argv[]) -> void
+{
+  // initialize trace file, code cache, set start/stop addresses to 0x0
   cap_initialize();
 
+  // get start/stop addresses from command line (default is 0x0)
   cap_set_start_address(start_address_knob.Value());
   cap_set_stop_address(stop_address_knob.Value());
 
@@ -207,37 +221,44 @@ auto load_configuration_and_options () -> void
     cap_add_full_skip_call_address(skip_full_address_knob.Value(i));
   }
 
-  for (uint32_t i = 0; i < skip_selective_address_knob.NumberOfValues(); ++i) {
-    cap_add_selective_skip_address(skip_selective_address_knob.Value(i));
-  }
+//  for (uint32_t i = 0; i < skip_selective_address_knob.NumberOfValues(); ++i) {
+//    cap_add_selective_skip_address(skip_selective_address_knob.Value(i));
+//  }
 
   for (uint32_t i = 0; i < skip_auto_address_knob.NumberOfValues(); ++i) {
     cap_add_auto_skip_call_addresses(skip_auto_address_knob.Value(i));
   }
 
-  if (!config_file.Value().empty()) {
-    tfm::format(std::cerr, "load configuration from file %s...\n", config_file.Value());
-    load_configuration_from_file(config_file.Value());
-  }
+  auto app_name = get_application_name(argc, argv);
+//  app_name = "result_default";
 
-  if (!option_file.Value().empty()) {
-    tfm::format(std::cerr, "load options from file %s...\n", option_file.Value());
-    load_option_from_file(option_file.Value());
+  auto config_filename = config_file.Value();
+  if (config_filename.empty()) {
+    tfm::printfln("the configuration filename is empty, try to guess it from the application name");
+    config_filename = app_name + ".conf";
   }
+  tfm::format(std::cerr, "load configuration from file %s...\n", config_filename);
+  load_configuration_from_file(config_filename);
+
+  auto option_filename = option_file.Value();
+  if (option_filename.empty()) {
+    tfm::printfln("the option filename is empty, try to guess it from the application name");
+    option_filename = app_name + ".opt";
+  }
+  tfm::format(std::cerr, "load options from file %s...\n", option_filename);
+  load_option_from_file(option_filename);
 
   cap_set_trace_length(trace_length_knob.Value());
   cap_set_loop_count(loop_count_knob.Value());
 
   cap_initialize_state();
 
-  cap_parser_initialize(output_file.Value());
-
-//  assert(start_address != 0x0);
-
-//  cap_verify_parameters();
-
-//  tfm::printfln("code cache block size: %d", CODECACHE_BlockSize());
-//  tfm::printfln("code cache limit size: %d", CODECACHE_CacheSizeLimit());
+  auto output_filename = output_file.Value();
+  if (output_filename.empty()) {
+    tfm::printfln("the output filename is empty, try to guess it from the application name");
+    output_filename = app_name  + ".out";
+  }
+  cap_parser_initialize(output_filename);
 
   return;
 }
@@ -303,6 +324,11 @@ auto main(int argc, char* argv[]) -> int
   windows::reopen_console();
 #endif
 
+//  for (auto i = int{0}; i < argc; ++i) {
+//    tfm::printfln("%s", argv[i]);
+//  }
+//  return 0;
+
   // symbol of the binary should be initialized first
   tfm::format(std::cerr, "initialize image symbols...\n");
   PIN_InitSymbols();
@@ -314,12 +340,9 @@ auto main(int argc, char* argv[]) -> int
   else {
     tfm::format(std::cerr, "initialize Pin successfully...\n");
 
-    if (!config_file_is_loaded && !option_file_is_loaded) {
-      tfm::format(std::cerr, "load configuration and options...\n");
-      load_configuration_and_options();
+    tfm::format(std::cerr, "load configuration and options...\n");
+    load_configuration_and_options(argc, argv);
 
-      config_file_is_loaded = true; option_file_is_loaded = true;
-    }
 //    tfm::printfln("add start function...");
 //    PIN_AddApplicationStartFunction(load_configuration_and_options, UNUSED_DATA);
 
@@ -339,7 +362,10 @@ auto main(int argc, char* argv[]) -> int
 
     tfm::format(std::cerr, "add fini function\n");
     PIN_AddFiniFunction(stop_pin, UNUSED_DATA);
-    PIN_AddDetachFunction(detach_pin, UNUSED_DATA);
+//    PIN_AddDetachFunction(detach_pin, UNUSED_DATA);
+
+    tfm::format(std::cerr, "add follow process function\n");
+    PIN_AddFollowChildProcessFunction(proc_follow_process, UNUSED_DATA);
 
     tfm::format(std::cerr, "pass control to Pin...\n");
     PIN_StartProgram();

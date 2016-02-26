@@ -12,7 +12,7 @@ auto cap_set_trace_length                   (uint32_t trace_length)             
 auto cap_set_start_address                  (ADDRINT address)                                        -> void;
 auto cap_set_stop_address                   (ADDRINT address)                                        -> void;
 auto cap_add_full_skip_call_address         (ADDRINT address)                                        -> void;
-auto cap_add_selective_skip_address         (ADDRINT address)                                        -> void;
+//auto cap_add_selective_skip_address         (ADDRINT address)                                        -> void;
 auto cap_add_auto_skip_call_addresses       (ADDRINT address)                                        -> void;
 auto cap_set_loop_count                     (uint32_t count)                                         -> void;
 auto cap_verify_parameters                  ()                                                       -> void;
@@ -52,6 +52,9 @@ extern img_instrumentation_t cap_img_mode_get_ins_info;
 
 extern SYSCALL_ENTRY_CALLBACK cap_get_syscall_entry_info;
 extern SYSCALL_EXIT_CALLBACK cap_get_syscall_exit_info;
+
+// when new process is created/forked
+extern auto proc_follow_process (CHILD_PROCESS child_proc, VOID* data) -> bool;
 
 //using syscall_instrumentation_t = VOID (*)(THREADID thread_id, const CONTEXT* p_context, SYSCALL_STANDARD std, VOID* data);
 //extern ins_instrumentation_t cap_instrument_instruction_not_follow_call;

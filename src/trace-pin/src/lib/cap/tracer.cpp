@@ -76,7 +76,7 @@ static auto resume_address_of_thread           = std::map<THREADID, ADDRINT>();
 static auto start_address                      = ADDRINT{0};
 static auto stop_address                       = ADDRINT{0};
 static auto full_skip_call_addresses           = std::vector<ADDRINT>();
-static auto selective_skip_call_addresses      = std::vector<ADDRINT>();
+//static auto selective_skip_call_addresses      = std::vector<ADDRINT>();
 static auto auto_skip_call_addresses           = std::vector<ADDRINT>();
 static auto max_trace_length                   = uint32_t{0};
 static auto loop_count                         = uint32_t{0};
@@ -169,7 +169,7 @@ static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt, ADDR
 
     tfm::format(std::cerr, "state changed to %s, restart instrumentation...\n",
                 !some_thread_is_not_suspended ? "suspend" : "enable");
-    cap_flush_trace();
+//    cap_flush_trace();
 
     PIN_RemoveInstrumentation();
     PIN_ExecuteAt(p_ctxt);
@@ -209,13 +209,13 @@ static auto update_condition (ADDRINT ins_addr, THREADID thread_id) -> void
           state_of_thread[thread_id] = FULL_SUSPENDED;
         }
 
-        if (std::find(
-              std::begin(selective_skip_call_addresses), std::end(selective_skip_call_addresses), thread_ins_addr)
-            != std::end(selective_skip_call_addresses)) {
+//        if (std::find(
+//              std::begin(selective_skip_call_addresses), std::end(selective_skip_call_addresses), thread_ins_addr)
+//            != std::end(selective_skip_call_addresses)) {
 
-          tfm::format(std::cerr, "suspend (selective) thread %d...\n", thread_id);
-          state_of_thread[thread_id] = SELECTIVE_SUSPENDED;
-        }
+//          tfm::format(std::cerr, "suspend (selective) thread %d...\n", thread_id);
+//          state_of_thread[thread_id] = SELECTIVE_SUSPENDED;
+//        }
 
         if ((std::get<INS_ADDRESS>(ins_at_thread[thread_id]) == stop_address) && (stop_address != 0x0)) {
           state_of_thread[thread_id] = FULL_SUSPENDED;
@@ -440,10 +440,10 @@ static auto save_call_concrete_info (ADDRINT called_addr, THREADID thread_id) ->
       auto ins_addr = std::get<INS_ADDRESS>(ins_at_thread[thread_id]);
       if ((std::find(
              std::begin(full_skip_call_addresses), std::end(full_skip_call_addresses), ins_addr
-             ) != std::end(full_skip_call_addresses)) ||
+             ) != std::end(full_skip_call_addresses)) /*||
           (std::find(
              std::begin(selective_skip_call_addresses), std::end(selective_skip_call_addresses), ins_addr
-             ) != std::end(selective_skip_call_addresses))) {
+             ) != std::end(selective_skip_call_addresses))*/) {
         call_info.is_traced = false;
       }
       else {
@@ -822,17 +822,16 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
 
       auto current_ins_addr = current_ins->address;
 
-      if ((std::find(
+      if (/*(std::find(
             std::begin(selective_skip_call_addresses), std::end(selective_skip_call_addresses), current_ins_addr
              ) != std::end(selective_skip_call_addresses))
-          ||
+          ||*/
           (std::find(
              std::begin(full_skip_call_addresses), std::end(full_skip_call_addresses), current_ins_addr
              ) != std::end(full_skip_call_addresses))
           ) {
 //        ASSERTX((current_ins->is_call || current_ins->is_branch) &&
 //                "the instruction at the skip address must be a call or branch");
-
 
         static_assert(std::is_same<
                       decltype(update_resume_address), VOID (ADDRINT, UINT32)
@@ -1462,6 +1461,35 @@ static auto save_syscall_exit_concret_info (THREADID thread_id,
 }
 
 
+auto proc_follow_process (CHILD_PROCESS child_proc, VOID* data) -> bool
+{
+  (void)data;
+
+  auto child_argc = int{0};
+  const char* const *child_argv;
+
+  tfm::printfln("save trace before new process is created/forked...");
+  cap_flush_trace();
+
+  CHILD_PROCESS_GetCommandLine(child_proc, &child_argc, &child_argv);
+  tfm::printf("new process is created/forked with: ");
+  for (auto i = int{0}; i < child_argc; ++i) {
+    tfm::printf("%s ", child_argv[i]);
+  }
+  tfm::printfln("");
+
+  tfm::printfln("current pin command line for new process: %s");
+  const char *pin_argv[] = { "./pin71313/ia32/bin/pinbin",
+                             "-ifeellucky", "-follow_execv", "-t", "pintools/vtrace.pin_m32",
+                             "-opt", "default.opt", "-out", "default.trace", "--" };
+  CHILD_PROCESS_SetPinCommandLine(child_proc, 10, pin_argv);
+
+//  tfm::printfln("%s", child_cmd.String());
+  return true;
+}
+
+
+
 /*====================================================================================================================*/
 /*                                                   exported functions                                               */
 /*====================================================================================================================*/
@@ -1641,11 +1669,11 @@ auto cap_add_full_skip_call_address (ADDRINT address) -> void
 }
 
 
-auto cap_add_selective_skip_address (ADDRINT address) -> void
-{
-  selective_skip_call_addresses.push_back(address);
-  return;
-}
+//auto cap_add_selective_skip_address (ADDRINT address) -> void
+//{
+//  selective_skip_call_addresses.push_back(address);
+//  return;
+//}
 
 
 auto cap_add_auto_skip_call_addresses (ADDRINT address) -> void
