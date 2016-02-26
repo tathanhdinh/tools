@@ -38,6 +38,11 @@ static KNOB<string> output_file                  (KNOB_MODE_WRITEONCE, "pintool"
 
 static KNOB<string> option_file                  (KNOB_MODE_WRITEONCE, "pintool", "opt", "", "option file, for parameter");
 
+static auto config_file_is_loaded = false;
+static auto option_file_is_loaded = false;
+static auto trace_file_is_opened = false;
+
+
 /*====================================================================================================================*/
 /*                                                     support functions                                              */
 /*====================================================================================================================*/
@@ -248,6 +253,17 @@ auto stop_pin (INT32 code, VOID* data) -> VOID
   return;
 }
 
+auto detach_pin (VOID* data) -> VOID
+{
+  (void)data;
+
+  tfm::format(std::cerr, "save trace...\n");
+  cap_flush_trace();
+  cap_parser_finalize();
+
+  return;
+}
+
 #if defined(_WIN32) || defined(_WIN64)
 namespace windows
 {
@@ -298,8 +314,12 @@ auto main(int argc, char* argv[]) -> int
   else {
     tfm::format(std::cerr, "initialize Pin successfully...\n");
 
-    tfm::format(std::cerr, "load configuration and options...\n");
-    load_configuration_and_options();
+    if (!config_file_is_loaded && !option_file_is_loaded) {
+      tfm::format(std::cerr, "load configuration and options...\n");
+      load_configuration_and_options();
+
+      config_file_is_loaded = true; option_file_is_loaded = true;
+    }
 //    tfm::printfln("add start function...");
 //    PIN_AddApplicationStartFunction(load_configuration_and_options, UNUSED_DATA);
 
@@ -313,12 +333,13 @@ auto main(int argc, char* argv[]) -> int
 //    TRACE_AddInstrumentFunction(cap_trace_mode_patch_ins_info, UNUSED_DATA);
     TRACE_AddInstrumentFunction(cap_trace_mode_get_ins_info, UNUSED_DATA);
 
-    tfm::format(std::cerr, "register syscall instruction instrumentation...\n");
+//    tfm::format(std::cerr, "register syscall instruction instrumentation...\n");
 //    PIN_AddSyscallEntryFunction(cap_get_syscall_entry_info, UNUSED_DATA);
 //    PIN_AddSyscallExitFunction(cap_get_syscall_exit_info, UNUSED_DATA);
 
     tfm::format(std::cerr, "add fini function\n");
     PIN_AddFiniFunction(stop_pin, UNUSED_DATA);
+    PIN_AddDetachFunction(detach_pin, UNUSED_DATA);
 
     tfm::format(std::cerr, "pass control to Pin...\n");
     PIN_StartProgram();

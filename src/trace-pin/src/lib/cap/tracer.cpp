@@ -169,6 +169,7 @@ static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt, ADDR
 
     tfm::format(std::cerr, "state changed to %s, restart instrumentation...\n",
                 !some_thread_is_not_suspended ? "suspend" : "enable");
+    cap_flush_trace();
 
     PIN_RemoveInstrumentation();
     PIN_ExecuteAt(p_ctxt);
