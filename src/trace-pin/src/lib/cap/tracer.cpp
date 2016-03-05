@@ -147,6 +147,22 @@ static auto reinstrument_if_some_thread_started (ADDRINT current_addr,
 }
 
 
+static auto update_skip_addresses(ADDRINT ins_addr, ADDRINT target_addr) -> void
+{
+  if ((std::find(std::begin(full_skip_call_addresses),
+                 std::end(full_skip_call_addresses), ins_addr) == std::end(full_skip_call_addresses)) &&
+      (std::find(std::begin(auto_skip_call_addresses),
+                std::end(auto_skip_call_addresses), target_addr) != std::end(auto_skip_call_addresses))) {
+
+    tfm::format(std::cerr, "add a full-skip at 0x%x  %s from an auto-skip at 0x%x\n",
+                ins_addr, cached_ins_at_addr[ins_addr]->disassemble, target_addr);
+
+    full_skip_call_addresses.push_back(ins_addr);
+  }
+  return;
+}
+
+
 static auto reinstrument_because_of_suspended_state (const CONTEXT* p_ctxt, ADDRINT ins_addr) -> void
 {
   auto new_state = std::any_of(std::begin(state_of_thread), std::end(state_of_thread),
@@ -759,6 +775,21 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
    */
   auto current_ins = cached_ins_at_addr[ins_addr];
 
+  /*
+   * runtime skip checking
+   */
+  if (current_ins->is_call) {
+    static_assert(std::is_same<decltype (update_skip_addresses), VOID (ADDRINT, ADDRINT)
+                  >::value, "invalid callback function type");
+
+    INS_InsertCall(ins,
+                   IPOINT_BEFORE,
+                   reinterpret_cast<AFUNPTR>(update_skip_addresses),
+                   IARG_INST_PTR,
+                   IARG_BRANCH_TARGET_ADDR,
+                   IARG_END);
+  }
+
 
   if (some_thread_is_started) {
     /*
@@ -971,7 +1002,7 @@ static auto insert_ins_get_info_callbacks (INS ins) -> void
   else { // !some_thread_is_started
 
     /*
-     * The following callback functions will restart the instrumentation if the next executed instruction has is the
+     * The following callback functions will restart the instrumentation if the next executed instruction is the
      * start instruction. They are also the only analysis functions called when the start instruction is not executed.
      *
      * We DO NOT NEED to give too much attention at these functions, because they are never re-executed. The value

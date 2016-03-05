@@ -19,7 +19,7 @@
 /*====================================================================================================================*/
 
 
-static KNOB<uint32_t> trace_length_knob          (KNOB_MODE_WRITEONCE, "pintool", "length", "3000000", "length of trace");
+static KNOB<uint32_t> trace_length_knob          (KNOB_MODE_WRITEONCE, "pintool", "length", "10000", "length of trace");
 
 static KNOB<ADDRINT> start_address_knob          (KNOB_MODE_WRITEONCE, "pintool", "start", "0x0", "tracing start address");
 
@@ -35,7 +35,7 @@ static KNOB<UINT32> loop_count_knob              (KNOB_MODE_WRITEONCE, "pintool"
 
 static KNOB<string> config_file                  (KNOB_MODE_WRITEONCE, "pintool", "conf", "", "configuration file, for parameterized analysis");
 
-static KNOB<string> output_file                  (KNOB_MODE_WRITEONCE, "pintool", "out", "trace.msg", "output file, for resulted trace");
+static KNOB<string> output_file                  (KNOB_MODE_WRITEONCE, "pintool", "out", "", "output file, for resulted trace");
 
 static KNOB<string> option_file                  (KNOB_MODE_WRITEONCE, "pintool", "opt", "", "option file, for parameter");
 
@@ -234,16 +234,17 @@ auto load_configuration_and_options (int argc, char* argv[]) -> void
 
   auto config_filename = config_file.Value();
   if (config_filename.empty()) {
-    tfm::printfln("the configuration filename is empty, try to guess it from the application name");
     config_filename = app_name + ".conf";
+    tfm::printfln("the configuration filename is empty, try to guess it from the application name; %s", config_filename);
+
   }
   tfm::format(std::cerr, "load configuration from file %s...\n", config_filename);
   load_configuration_from_file(config_filename);
 
   auto option_filename = option_file.Value();
   if (option_filename.empty()) {
-    tfm::printfln("the option filename is empty, try to guess it from the application name");
     option_filename = app_name + ".opt";
+    tfm::printfln("the option filename is empty, try to guess it from the application name: %s", option_filename);
   }
   tfm::format(std::cerr, "load options from file %s...\n", option_filename);
   load_option_from_file(option_filename);
@@ -255,8 +256,9 @@ auto load_configuration_and_options (int argc, char* argv[]) -> void
 
   auto output_filename = output_file.Value();
   if (output_filename.empty()) {
-    tfm::printfln("the output filename is empty, try to guess it from the application name");
     output_filename = app_name  + ".out";
+
+    tfm::printfln("the output filename is empty, try to guess it from the application name: %s", output_filename);
   }
   cap_parser_initialize(output_filename);
 
